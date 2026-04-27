@@ -112,10 +112,7 @@ export default function Dashboard() {
       <div className="bg-white dark:bg-gray-900 border-b border-gray-100 dark:border-gray-800 px-4 py-3 sticky top-0 z-30">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2.5">
-            <img src="/cricpoint-logo-dashboard.png" alt="CricPoint" className="w-9 h-9 object-contain" />
-            <h1 className="text-lg font-black text-gray-800 dark:text-gray-200">
-              Cric<span className="text-green-600 dark:text-green-400">Point</span>
-            </h1>
+            <img src="/cricpoint-logo-dashboard.png" alt="CricPoint" className="w-12 h-12 object-contain" />
           </div>
           <div className="flex items-center gap-3">
             {matches.filter(m => m.isLive).length > 0 && (
@@ -189,6 +186,22 @@ export default function Dashboard() {
                 ))}
               </div>
             )}
+
+            {/* Bottom Footer */}
+            <div className="px-6 pb-4 pt-6">
+              <div className="text-center">
+                <img src="/cricpoint-logo-dashboard.png" alt="CricPoint" className="w-10 h-10 object-contain mx-auto mb-2 opacity-40" />
+                <p className="text-[10px] text-gray-400 font-medium">CricPoint v1.0</p>
+                <p className="text-[9px] text-gray-300 dark:text-gray-600 mt-0.5">Your Cricket Companion</p>
+                <div className="flex items-center justify-center gap-3 mt-2">
+                  <span className="text-[9px] text-gray-300 dark:text-gray-600">About</span>
+                  <span className="text-[9px] text-gray-300 dark:text-gray-600">•</span>
+                  <span className="text-[9px] text-gray-300 dark:text-gray-600">Privacy</span>
+                  <span className="text-[9px] text-gray-300 dark:text-gray-600">•</span>
+                  <span className="text-[9px] text-gray-300 dark:text-gray-600">Terms</span>
+                </div>
+              </div>
+            </div>
           </div>
         )}
 
