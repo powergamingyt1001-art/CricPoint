@@ -47,7 +47,7 @@ export default function SplashScreen({ onComplete }: { onComplete: () => void })
         transition={{ duration: 0.8, ease: "easeOut" }}
       >
         <motion.div
-          className="relative w-40 h-40 mb-6"
+          className="relative w-56 h-56 mb-8"
           initial={{ rotate: -10 }}
           animate={{ rotate: 0 }}
           transition={{ delay: 0.3, duration: 0.6, ease: "easeOut" }}
@@ -57,6 +57,8 @@ export default function SplashScreen({ onComplete }: { onComplete: () => void })
             alt="CricPoint Logo"
             className="w-full h-full object-contain drop-shadow-2xl"
           />
+          {/* Glow effect behind logo */}
+          <div className="absolute inset-0 -z-10 bg-green-400/20 rounded-full blur-3xl scale-110" />
         </motion.div>
       </motion.div>
 

@@ -149,31 +149,31 @@ export default function Dashboard() {
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex flex-col">
-      {/* Premium Header - Logo circle + Name */}
-      <div className="bg-white dark:bg-gray-900 border-b border-gray-100 dark:border-gray-800 px-4 py-2 sticky top-0 z-30">
+      {/* Premium Header - Gradient green + Big Logo */}
+      <div className="bg-gradient-to-r from-green-700 via-green-600 to-emerald-600 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 border-b border-green-800/30 dark:border-gray-700 px-4 py-2.5 sticky top-0 z-30 shadow-md">
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2.5">
-            {/* Circle Logo */}
-            <div className="w-11 h-11 rounded-full bg-green-50 dark:bg-green-900/30 flex items-center justify-center border-2 border-green-500 overflow-hidden">
-              <img src="/cricpoint-logo-dashboard.png" alt="CricPoint" className="w-8 h-8 object-contain" />
+          <div className="flex items-center gap-3">
+            {/* Circle Logo - BIG */}
+            <div className="w-12 h-12 rounded-full bg-white/20 dark:bg-green-900/40 flex items-center justify-center border-2 border-white/40 dark:border-green-400/50 overflow-hidden shadow-lg">
+              <img src="/cricpoint-logo-dashboard.png" alt="CricPoint" className="w-10 h-10 object-contain" />
             </div>
             {/* Name next to logo */}
             <div>
-              <h1 className="text-base font-black text-gray-800 dark:text-gray-200 leading-tight">
-                Cric<span className="text-green-600 dark:text-green-400">Point</span>
+              <h1 className="text-lg font-black text-white dark:text-gray-100 leading-tight">
+                Cric<span className="text-yellow-300 dark:text-green-400">Point</span>
               </h1>
-              <p className="text-[9px] text-gray-400 font-medium">Live Cricket Score</p>
+              <p className="text-[9px] text-white/60 dark:text-gray-400 font-medium">Live Cricket Score</p>
             </div>
           </div>
           <div className="flex items-center gap-2">
             {liveMatches.length > 0 && (
-              <div className="flex items-center gap-1 bg-red-50 dark:bg-red-900/20 px-2 py-0.5 rounded-full">
-                <Radio className="w-2.5 h-2.5 text-red-500" />
-                <span className="text-[9px] font-bold text-red-500">{liveMatches.length} LIVE</span>
+              <div className="flex items-center gap-1 bg-red-500/90 px-2 py-0.5 rounded-full shadow-sm">
+                <Radio className="w-2.5 h-2.5 text-white" />
+                <span className="text-[9px] font-bold text-white">{liveMatches.length} LIVE</span>
               </div>
             )}
-            <button onClick={handleRefresh} className="p-1.5 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">
-              <RefreshCw className={`w-3.5 h-3.5 text-gray-500 ${refreshing ? 'animate-spin' : ''}`} />
+            <button onClick={handleRefresh} className="p-1.5 rounded-full hover:bg-white/10 dark:hover:bg-gray-700 transition-colors">
+              <RefreshCw className={`w-3.5 h-3.5 text-white/80 ${refreshing ? 'animate-spin' : ''}`} />
             </button>
           </div>
         </div>
@@ -190,32 +190,44 @@ export default function Dashboard() {
           <div className="pt-3">
             <MatchSlider matches={matches} onSelectMatch={(m) => selectMatch(m.id, m)} />
 
-            {/* Green Box: Completed Matches */}
-            <div className="mx-5 mt-4 bg-green-50 dark:bg-green-900/20 rounded-2xl border-2 border-green-500 dark:border-green-600 p-3">
-              <div className="flex items-center gap-2 mb-2">
-                <Clock className="w-3.5 h-3.5 text-green-600 dark:text-green-400" />
-                <h2 className="text-xs font-bold text-green-700 dark:text-green-300">Completed Matches</h2>
+            {/* Green Box: Completed Matches - BIGGER */}
+            <div className="mx-5 mt-4 bg-green-50 dark:bg-green-900/20 rounded-2xl border-2 border-green-500 dark:border-green-600 p-4 shadow-sm">
+              <div className="flex items-center gap-2 mb-3">
+                <Clock className="w-4 h-4 text-green-600 dark:text-green-400" />
+                <h2 className="text-sm font-bold text-green-700 dark:text-green-300">Completed Matches</h2>
               </div>
-              <div className="space-y-1.5">
+              <div className="space-y-2">
                 {completedMatches.map((match) => (
                   <button
                     key={match.id}
                     onClick={() => selectMatch(match.id, match)}
-                    className="w-full text-left bg-white dark:bg-gray-800 rounded-xl p-2.5 border border-green-200 dark:border-green-800/50 hover:shadow-sm transition-all active:scale-[0.99]"
+                    className="w-full text-left bg-white dark:bg-gray-800 rounded-xl p-3 border border-green-200 dark:border-green-800/50 hover:shadow-sm transition-all active:scale-[0.99]"
                   >
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="text-[9px] font-semibold text-gray-400 uppercase tracking-wide">{match.matchType} · {match.venue}</span>
+                    </div>
                     <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-1.5">
-                        <span className="text-xs">{match.team1Flag}</span>
-                        <span className="text-[11px] font-bold text-gray-700 dark:text-gray-300">{match.team1Short}</span>
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm">{match.team1Flag}</span>
+                        <span className="text-xs font-bold text-gray-800 dark:text-gray-200">{match.team1Short}</span>
                         <span className="text-[9px] text-gray-400">vs</span>
-                        <span className="text-[11px] font-bold text-gray-700 dark:text-gray-300">{match.team2Short}</span>
-                        <span className="text-xs">{match.team2Flag}</span>
+                        <span className="text-xs font-bold text-gray-700 dark:text-gray-300">{match.team2Short}</span>
+                        <span className="text-sm">{match.team2Flag}</span>
                       </div>
-                      <span className="text-[9px] text-green-600 dark:text-green-400 font-medium max-w-[120px] truncate">{match.status}</span>
+                      <span className="text-[10px] text-green-600 dark:text-green-400 font-medium max-w-[130px] truncate">{match.status}</span>
+                    </div>
+                    <div className="flex items-center justify-between mt-1">
+                      <span className="text-[10px] text-gray-500">{match.team1Score}</span>
+                      <span className="text-[10px] text-gray-500">{match.team2Score}</span>
                     </div>
                   </button>
                 ))}
               </div>
+            </div>
+
+            {/* Banner Ad - Between completed matches and posts */}
+            <div className="mx-5 mt-3">
+              <AdBanner />
             </div>
 
             {/* Down Arrow - Swipe to reveal posts */}

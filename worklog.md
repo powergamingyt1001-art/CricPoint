@@ -114,3 +114,31 @@ Stage Summary:
 - Slider: Compact cards with better spacing
 - Green box: Completed matches section
 - Down arrow: Reveals posts on click
+
+---
+Task ID: 4
+Agent: Main Agent
+Task: UI refinements based on user's two new images (hand-drawn + screenshot)
+
+Work Log:
+- Analyzed two uploaded images: hand-drawn design sketch + current app screenshot
+- User wants: premium header color (not white), bigger logo circle, bigger completed matches box, banner ad between completed and posts, bigger intro logo
+- Changed header from white to gradient green (from-green-700 via-green-600 to-emerald-600)
+- Header text changed to white, "Point" in yellow-300 for contrast
+- Logo circle made bigger (w-12 h-12) with white/20 background and border
+- Logo image inside made bigger (w-10 h-10)
+- LIVE badge changed to red-500/90 with white text for better contrast on green header
+- Refresh button changed to white/80 color
+- Completed matches green box made bigger: p-4, bigger text, added venue info, score lines
+- Added banner ad between completed matches and down arrow
+- Intro splash logo made bigger: w-56 h-56 (from w-40 h-40)
+- Added glow effect behind intro logo
+- Fixed Pin section top offset for new header height
+- All lint checks pass, dev server running
+
+Stage Summary:
+- Header: Premium gradient green (not white), big logo, white text
+- Completed matches: Bigger green box with venue + score details
+- Banner ad: Added between completed matches and posts arrow
+- Intro logo: Much bigger (w-56 h-56) with glow effect
+- Pin section: Adjusted for new header height

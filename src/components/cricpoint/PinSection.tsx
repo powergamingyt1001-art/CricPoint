@@ -17,7 +17,7 @@ export default function PinSection({ matches }: { matches: MatchBasic[] }) {
     <AnimatePresence>
       {matchPinned && (
         <motion.div
-          className="sticky top-[52px] z-20 px-5 py-1.5"
+          className="sticky top-[58px] z-20 px-5 py-1.5"
           initial={{ opacity: 0, y: -10 }}
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: -10 }}
