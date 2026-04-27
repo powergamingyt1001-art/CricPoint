@@ -2,7 +2,7 @@
 
 import { motion } from 'framer-motion';
 
-// Pre-computed values to avoid hydration mismatch from Math.random()
+// Pre-computed values to avoid hydration mismatch
 const PARTICLES = [
   { w: 80, h: 90, left: 12, top: 8, xOff: 5, dur: 3.2 },
   { w: 95, h: 70, left: 65, top: 15, xOff: -8, dur: 4.1 },
@@ -55,24 +55,18 @@ export default function SplashScreen({ onComplete }: { onComplete: () => void })
         animate={{ scale: 1, opacity: 1 }}
         transition={{ duration: 0.8, ease: "easeOut" }}
       >
-        {/* Cricket Ball Logo */}
+        {/* CricPoint Logo Image */}
         <motion.div
-          className="relative w-28 h-28 mb-6"
-          animate={{ rotate: [0, 360] }}
-          transition={{ duration: 4, repeat: Infinity, ease: "linear" }}
+          className="relative w-36 h-36 mb-4"
+          initial={{ rotate: -10 }}
+          animate={{ rotate: 0 }}
+          transition={{ delay: 0.3, duration: 0.6, ease: "easeOut" }}
         >
-          <div className="w-full h-full rounded-full bg-gradient-to-br from-red-500 to-red-700 shadow-2xl flex items-center justify-center relative overflow-hidden">
-            {/* Ball seam */}
-            <div className="absolute w-full h-[2px] bg-white/40 top-1/2 -translate-y-1/2 rotate-[25deg]" />
-            <div className="absolute w-[2px] h-full bg-white/30 left-1/2 -translate-x-1/2 rotate-[25deg]" />
-            {/* Stitching */}
-            <div className="absolute top-[30%] left-[15%] w-2 h-2 border border-white/50 rounded-full" />
-            <div className="absolute top-[35%] left-[20%] w-2 h-2 border border-white/50 rounded-full" />
-            <div className="absolute bottom-[30%] right-[15%] w-2 h-2 border border-white/50 rounded-full" />
-            <div className="absolute bottom-[35%] right-[20%] w-2 h-2 border border-white/50 rounded-full" />
-            {/* CP text */}
-            <span className="text-white font-black text-2xl z-10">CP</span>
-          </div>
+          <img
+            src="/cricpoint-logo-intro.png"
+            alt="CricPoint Logo"
+            className="w-full h-full object-contain drop-shadow-2xl"
+          />
         </motion.div>
 
         {/* App Name */}
@@ -91,7 +85,7 @@ export default function SplashScreen({ onComplete }: { onComplete: () => void })
           animate={{ opacity: 1 }}
           transition={{ delay: 0.8, duration: 0.5 }}
         >
-          Live Cricket Scores
+          Live Scores. Every Point.
         </motion.p>
       </motion.div>
 

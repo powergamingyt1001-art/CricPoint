@@ -60,64 +60,64 @@ export default function MatchDetail() {
   if (!match) return null;
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 pb-20">
-      {/* Header */}
-      <div className="bg-gradient-to-r from-green-700 to-emerald-800 text-white px-4 pt-4 pb-6">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 pb-4">
+      {/* Premium Header with gradient */}
+      <div className="bg-gradient-to-br from-gray-800 via-gray-900 to-green-900 text-white px-4 pt-4 pb-8">
         <button
           onClick={goBack}
-          className="flex items-center gap-1.5 text-white/80 hover:text-white mb-4 transition-colors"
+          className="flex items-center gap-1.5 text-white/70 hover:text-white mb-4 transition-colors"
         >
           <ArrowLeft className="w-4 h-4" />
           <span className="text-xs font-medium">Back</span>
         </button>
 
-        <p className="text-[10px] text-white/60 uppercase tracking-wider mb-2">{match.matchType}</p>
+        <p className="text-[10px] text-white/50 uppercase tracking-wider mb-3">{match.matchType}</p>
 
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <span className="text-2xl">{match.team1Flag}</span>
-            <div>
-              <p className="text-base font-bold">{match.team1}</p>
-              <p className="text-sm text-white/80">{match.team1Score || '-'}</p>
-            </div>
+        {/* Teams with better layout */}
+        <div className="flex items-center justify-between gap-4">
+          {/* Team 1 */}
+          <div className="flex-1 text-center">
+            <span className="text-3xl block mb-1">{match.team1Flag}</span>
+            <p className="text-sm font-bold truncate">{match.team1Short}</p>
+            <p className="text-base font-black text-green-400 mt-1">{match.team1Score || '-'}</p>
           </div>
 
-          <div className="text-center px-3">
+          {/* VS / Live */}
+          <div className="flex-shrink-0 text-center">
             {match.isLive ? (
-              <div className="flex items-center gap-1.5 bg-red-500/30 px-2.5 py-1 rounded-full">
+              <div className="flex items-center gap-1.5 bg-red-500/30 px-3 py-1.5 rounded-full">
                 <span className="w-2 h-2 bg-red-400 rounded-full animate-pulse" />
-                <span className="text-[10px] font-bold">LIVE</span>
+                <span className="text-[11px] font-bold">LIVE</span>
               </div>
             ) : (
-              <span className="text-[10px] text-white/60">vs</span>
+              <span className="text-xs text-white/40 font-bold">VS</span>
             )}
           </div>
 
-          <div className="flex items-center gap-2">
-            <div className="text-right">
-              <p className="text-base font-bold">{match.team2}</p>
-              <p className="text-sm text-white/80">{match.team2Score || '-'}</p>
-            </div>
-            <span className="text-2xl">{match.team2Flag}</span>
+          {/* Team 2 */}
+          <div className="flex-1 text-center">
+            <span className="text-3xl block mb-1">{match.team2Flag}</span>
+            <p className="text-sm font-bold truncate">{match.team2Short}</p>
+            <p className="text-base font-black text-white/80 mt-1">{match.team2Score || '-'}</p>
           </div>
         </div>
 
         {!match.isLive && (
           <p className="text-xs text-yellow-300 mt-3 text-center font-medium">{match.status}</p>
         )}
-        <p className="text-[10px] text-white/50 mt-1 text-center">{match.venue}</p>
+        <p className="text-[10px] text-white/40 mt-1 text-center">{match.venue}</p>
       </div>
 
-      {/* Tabs */}
+      {/* Tabs with active highlight */}
       <div className="sticky top-0 z-30 bg-white dark:bg-gray-900 border-b border-gray-100 dark:border-gray-800 shadow-sm">
         <div className="flex">
           {matchTabs.map((tab) => (
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
-              className={`flex-1 flex items-center justify-center gap-1.5 py-3 text-xs font-semibold transition-all ${
+              className={`flex-1 flex items-center justify-center gap-1.5 py-3.5 text-xs font-semibold transition-all ${
                 activeTab === tab.id
-                  ? 'text-green-600 dark:text-green-400 border-b-2 border-green-600 dark:border-green-400'
+                  ? 'text-green-600 dark:text-green-400 border-b-2 border-green-600 dark:border-green-400 bg-green-50/50 dark:bg-green-900/10'
                   : 'text-gray-400 hover:text-gray-600 dark:hover:text-gray-300'
               }`}
             >
@@ -131,7 +131,13 @@ export default function MatchDetail() {
       {/* Tab Content */}
       <div className="overflow-y-auto">
         {activeTab === 'info' && <InfoSection info={matchInfo as any} loading={loading} />}
-        {activeTab === 'scorecard' && <ScorecardSection scorecard={scorecard as any} loading={loading} />}
+        {activeTab === 'scorecard' && (
+          <ScorecardSection
+            scorecard={scorecard as any}
+            loading={loading}
+            matchData={match}
+          />
+        )}
         {activeTab === 'overs' && <OverSection overs={overs as any} loading={loading} />}
         {activeTab === 'commentary' && <CommentarySection commentary={commentary as any} loading={loading} />}
       </div>
