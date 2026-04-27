@@ -1,7 +1,7 @@
 import { create } from "zustand";
 
 export type AppView = "splash" | "dashboard" | "match-detail";
-export type BottomTab = "home" | "pin" | "point-table" | "ai-chat";
+export type BottomTab = "home" | "points" | "commentary";
 export type MatchTab = "info" | "scorecard" | "overs" | "commentary";
 
 interface CricPointState {
@@ -9,13 +9,14 @@ interface CricPointState {
   activeTab: BottomTab;
   selectedMatchId: string | null;
   selectedMatchData: MatchBasic | null;
-  pinnedMatchId: string | null;
+  matchPinned: boolean;
 
   setView: (view: AppView) => void;
   setActiveTab: (tab: BottomTab) => void;
   selectMatch: (matchId: string, matchData: MatchBasic) => void;
   goBack: () => void;
-  pinMatch: (matchId: string | null) => void;
+  togglePin: () => void;
+  setPin: (val: boolean) => void;
 }
 
 export interface MatchBasic {
@@ -41,12 +42,13 @@ export const useCricPointStore = create<CricPointState>((set) => ({
   activeTab: "home",
   selectedMatchId: null,
   selectedMatchData: null,
-  pinnedMatchId: null,
+  matchPinned: false,
 
   setView: (view) => set({ currentView: view }),
   setActiveTab: (tab) => set({ activeTab: tab }),
   selectMatch: (matchId, matchData) =>
     set({ selectedMatchId: matchId, selectedMatchData: matchData, currentView: "match-detail" }),
   goBack: () => set({ currentView: "dashboard", selectedMatchId: null, selectedMatchData: null }),
-  pinMatch: (matchId) => set({ pinnedMatchId: matchId }),
+  togglePin: () => set((s) => ({ matchPinned: !s.matchPinned })),
+  setPin: (val) => set({ matchPinned: val }),
 }));

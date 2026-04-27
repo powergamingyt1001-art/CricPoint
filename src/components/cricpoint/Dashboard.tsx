@@ -1,11 +1,12 @@
 'use client';
 
 import { useEffect, useState, useCallback, useRef } from 'react';
-import { RefreshCw, Radio, Heart, MessageCircle, Share2, Clock } from 'lucide-react';
+import { RefreshCw, Radio, Heart, MessageCircle, Share2, Clock, ArrowUp, Mic } from 'lucide-react';
 import { useCricPointStore, type MatchBasic } from '@/store/cricpoint-store';
 import MatchSlider from './MatchSlider';
 import PinSection from './PinSection';
-import AIChat from './AIChat';
+import PointTable from './PointTable';
+import CommentarySection from './CommentarySection';
 import BottomNav from './BottomNav';
 
 const FALLBACK_MATCHES: MatchBasic[] = [
@@ -42,18 +43,6 @@ const MOCK_POSTS = [
     image: 'https://images.unsplash.com/photo-1552674605-db6ffd4facb5?w=600&h=350&fit=crop',
     likes: 567, comments: 32, time: '8h ago', liked: false,
   },
-  {
-    id: '5',
-    title: 'Rohit Sharma becomes 1st captain to win 50 T20Is!',
-    image: 'https://images.unsplash.com/photo-1574629810360-7efbbe195018?w=600&h=350&fit=crop',
-    likes: 3421, comments: 245, time: '10h ago', liked: false,
-  },
-  {
-    id: '6',
-    title: 'ICC Rankings Update: India stays #1 in all formats',
-    image: 'https://images.unsplash.com/photo-1541562232579-512a21360020?w=600&h=350&fit=crop',
-    likes: 1892, comments: 98, time: '12h ago', liked: false,
-  },
 ];
 
 function AdBanner() {
@@ -68,11 +57,13 @@ function AdBanner() {
 }
 
 export default function Dashboard() {
-  const { activeTab, selectMatch } = useCricPointStore();
+  const { activeTab, selectMatch, matchPinned } = useCricPointStore();
   const [matches, setMatches] = useState<MatchBasic[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [showScrollTop, setShowScrollTop] = useState(false);
   const initialFetchDone = useRef(false);
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
 
   const fetchMatches = useCallback(async () => {
     try {
@@ -94,7 +85,8 @@ export default function Dashboard() {
       if (!cancelled) setLoading(false);
     };
     load();
-    const interval = setInterval(fetchMatches, 30000);
+    // Auto-refresh every 10 seconds
+    const interval = setInterval(fetchMatches, 10000);
     return () => { cancelled = true; clearInterval(interval); };
   }, [fetchMatches]);
 
@@ -104,21 +96,37 @@ export default function Dashboard() {
     setRefreshing(false);
   };
 
+  // Scroll-to-top logic
+  useEffect(() => {
+    const container = scrollContainerRef.current;
+    if (!container) return;
+    const handleScroll = () => {
+      setShowScrollTop(container.scrollTop > 400);
+    };
+    container.addEventListener('scroll', handleScroll);
+    return () => container.removeEventListener('scroll', handleScroll);
+  }, []);
+
+  const scrollToTop = () => {
+    scrollContainerRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
   const completedMatches = matches.filter(m => !m.isLive);
+  const liveMatches = matches.filter(m => m.isLive);
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 pb-20">
-      {/* Premium Header */}
-      <div className="bg-white dark:bg-gray-900 border-b border-gray-100 dark:border-gray-800 px-4 py-3 sticky top-0 z-30">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex flex-col">
+      {/* Premium Header - Fixed */}
+      <div className="bg-white dark:bg-gray-900 border-b border-gray-100 dark:border-gray-800 px-4 py-2.5 sticky top-0 z-30">
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2.5">
+          <div className="flex items-center gap-2">
             <img src="/cricpoint-logo-dashboard.png" alt="CricPoint" className="w-12 h-12 object-contain" />
           </div>
           <div className="flex items-center gap-3">
-            {matches.filter(m => m.isLive).length > 0 && (
+            {liveMatches.length > 0 && (
               <div className="flex items-center gap-1 bg-red-50 dark:bg-red-900/20 px-2.5 py-1 rounded-full">
                 <Radio className="w-3 h-3 text-red-500" />
-                <span className="text-[10px] font-bold text-red-500">{matches.filter(m => m.isLive).length} LIVE</span>
+                <span className="text-[10px] font-bold text-red-500">{liveMatches.length} LIVE</span>
               </div>
             )}
             <button onClick={handleRefresh} className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">
@@ -128,12 +136,15 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {/* Content */}
-      <div className="overflow-y-auto">
+      {/* Pinned Match Overlay - Shows when pin is ON */}
+      {matchPinned && <PinSection matches={matches} />}
+
+      {/* Main Content - Scrollable */}
+      <div ref={scrollContainerRef} className="flex-1 overflow-y-auto pb-20" style={{ maxHeight: 'calc(100vh - 64px)' }}>
+        {/* HOME TAB */}
         {activeTab === 'home' && (
           <div className="space-y-6 pt-4">
             <MatchSlider matches={matches} onSelectMatch={(m) => selectMatch(m.id, m)} />
-            <PinSection matches={matches} />
 
             {/* Completed Matches */}
             {completedMatches.length > 0 && (
@@ -179,6 +190,15 @@ export default function Dashboard() {
               </div>
             </div>
 
+            {/* Bottom Footer */}
+            <div className="px-6 pb-4 pt-6">
+              <div className="text-center">
+                <img src="/cricpoint-logo-dashboard.png" alt="CricPoint" className="w-10 h-10 object-contain mx-auto mb-2 opacity-40" />
+                <p className="text-[10px] text-gray-400 font-medium">CricPoint v1.0</p>
+                <p className="text-[9px] text-gray-300 dark:text-gray-600 mt-0.5">Your Cricket Companion</p>
+              </div>
+            </div>
+
             {loading && (
               <div className="px-6 space-y-3">
                 {[...Array(3)].map((_, i) => (
@@ -186,30 +206,35 @@ export default function Dashboard() {
                 ))}
               </div>
             )}
-
-            {/* Bottom Footer */}
-            <div className="px-6 pb-4 pt-6">
-              <div className="text-center">
-                <img src="/cricpoint-logo-dashboard.png" alt="CricPoint" className="w-10 h-10 object-contain mx-auto mb-2 opacity-40" />
-                <p className="text-[10px] text-gray-400 font-medium">CricPoint v1.0</p>
-                <p className="text-[9px] text-gray-300 dark:text-gray-600 mt-0.5">Your Cricket Companion</p>
-                <div className="flex items-center justify-center gap-3 mt-2">
-                  <span className="text-[9px] text-gray-300 dark:text-gray-600">About</span>
-                  <span className="text-[9px] text-gray-300 dark:text-gray-600">•</span>
-                  <span className="text-[9px] text-gray-300 dark:text-gray-600">Privacy</span>
-                  <span className="text-[9px] text-gray-300 dark:text-gray-600">•</span>
-                  <span className="text-[9px] text-gray-300 dark:text-gray-600">Terms</span>
-                </div>
-              </div>
-            </div>
           </div>
         )}
 
-        {activeTab === 'pin' && <PinSection matches={matches} />}
-        {activeTab === 'point-table' && <PollsSection matches={matches} />}
-        {activeTab === 'ai-chat' && <AIChat />}
+        {/* POINTS TAB */}
+        {activeTab === 'points' && (
+          <div className="pt-4">
+            <PointTable />
+          </div>
+        )}
+
+        {/* COMMENTARY TAB */}
+        {activeTab === 'commentary' && (
+          <div className="pt-4">
+            <LiveCommentary matches={matches} />
+          </div>
+        )}
       </div>
 
+      {/* Scroll-to-top floating button */}
+      {showScrollTop && (
+        <button
+          onClick={scrollToTop}
+          className="fixed bottom-20 right-4 z-30 w-10 h-10 bg-green-600 text-white rounded-full shadow-lg flex items-center justify-center hover:bg-green-700 transition-all active:scale-90"
+        >
+          <ArrowUp className="w-5 h-5" />
+        </button>
+      )}
+
+      {/* Bottom Nav - Always Fixed */}
       <BottomNav />
     </div>
   );
@@ -252,82 +277,135 @@ function PostCard({ post }: { post: typeof MOCK_POSTS[0] }) {
   );
 }
 
-function PollsSection({ matches }: { matches: MatchBasic[] }) {
-  const [votes, setVotes] = useState<Record<string, string | null>>({});
+function LiveCommentary({ matches }: { matches: MatchBasic[] }) {
+  const [commentaryData, setCommentaryData] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+  const liveMatch = matches.find(m => m.isLive);
 
-  const liveAndUpcoming = matches.filter(m => m.isLive);
+  useEffect(() => {
+    let cancelled = false;
+    const load = async () => {
+      if (!liveMatch) {
+        if (!cancelled) setLoading(false);
+        return;
+      }
+      try {
+        const res = await fetch(`/api/cricket/match-commentary?matchid=${liveMatch.id}`);
+        const data = await res.json();
+        if (!cancelled) { setCommentaryData(data); setLoading(false); }
+      } catch {
+        if (!cancelled) setLoading(false);
+      }
+    };
+    load();
+    const interval = setInterval(load, 10000);
+    return () => { cancelled = true; clearInterval(interval); };
+  }, [liveMatch]);
 
-  const handleVote = (matchId: string, team: string) => {
-    setVotes(prev => ({ ...prev, [matchId]: team }));
-  };
-
-  if (liveAndUpcoming.length === 0) {
+  if (!liveMatch) {
     return (
-      <div className="px-6 py-8 text-center">
-        <p className="text-sm text-gray-400">No active polls right now</p>
+      <div className="px-6 py-12 text-center">
+        <Mic className="w-12 h-12 text-gray-300 mx-auto mb-3" />
+        <p className="text-sm text-gray-400 font-medium">No live match for commentary</p>
+        <p className="text-xs text-gray-300 mt-1">Commentary will appear when a match is live</p>
       </div>
     );
   }
 
-  return (
-    <div className="px-6 py-4 space-y-4">
-      <h2 className="text-sm font-bold text-gray-800 dark:text-gray-200">Match Polls</h2>
-      {liveAndUpcoming.map((match) => {
-        const voted = votes[match.id];
-        const team1Percent = voted ? (voted === 'team1' ? 67 : 60) : 0;
-        const team2Percent = voted ? (voted === 'team2' ? 55 : 40) : 0;
+  if (loading) {
+    return (
+      <div className="px-6 space-y-3">
+        {[...Array(5)].map((_, i) => (
+          <div key={i} className="h-16 bg-gray-100 dark:bg-gray-800 rounded-xl animate-pulse" />
+        ))}
+      </div>
+    );
+  }
 
-        return (
-          <div key={match.id} className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 p-4">
-            <div className="flex items-center justify-between mb-3">
-              <span className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide">{match.matchType}</span>
-              {match.isLive && (
-                <span className="flex items-center gap-1 text-[10px] font-bold text-red-500 bg-red-50 dark:bg-red-900/30 px-2 py-0.5 rounded-full">
-                  <span className="w-1.5 h-1.5 bg-red-500 rounded-full animate-pulse" />LIVE
-                </span>
-              )}
-            </div>
-            <p className="text-xs text-gray-500 mb-3">Who will win?</p>
-            <div className="space-y-2">
-              <button
-                onClick={() => handleVote(match.id, 'team1')}
-                disabled={!!voted}
-                className={`w-full relative overflow-hidden rounded-xl p-3 text-left transition-all ${
-                  voted === 'team1' ? 'ring-2 ring-green-500 bg-green-50 dark:bg-green-900/20'
-                  : voted ? 'bg-gray-50 dark:bg-gray-700/50' : 'bg-gray-50 dark:bg-gray-700/50 hover:bg-green-50 dark:hover:bg-green-900/10'
-                }`}
-              >
-                {voted && <div className="absolute left-0 top-0 bottom-0 bg-green-100/50 dark:bg-green-800/20" style={{ width: `${team1Percent}%` }} />}
-                <div className="relative flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <span className="text-base">{match.team1Flag}</span>
-                    <span className="text-sm font-bold text-gray-800 dark:text-gray-200">{match.team1}</span>
-                  </div>
-                  {voted && <span className="text-xs font-bold text-green-600">{team1Percent}%</span>}
-                </div>
-              </button>
-              <button
-                onClick={() => handleVote(match.id, 'team2')}
-                disabled={!!voted}
-                className={`w-full relative overflow-hidden rounded-xl p-3 text-left transition-all ${
-                  voted === 'team2' ? 'ring-2 ring-green-500 bg-green-50 dark:bg-green-900/20'
-                  : voted ? 'bg-gray-50 dark:bg-gray-700/50' : 'bg-gray-50 dark:bg-gray-700/50 hover:bg-green-50 dark:hover:bg-green-900/10'
-                }`}
-              >
-                {voted && <div className="absolute left-0 top-0 bottom-0 bg-green-100/50 dark:bg-green-800/20" style={{ width: `${team2Percent}%` }} />}
-                <div className="relative flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <span className="text-base">{match.team2Flag}</span>
-                    <span className="text-sm font-bold text-gray-800 dark:text-gray-200">{match.team2}</span>
-                  </div>
-                  {voted && <span className="text-xs font-bold text-green-600">{team2Percent}%</span>}
-                </div>
-              </button>
-            </div>
-            {voted && <p className="text-[10px] text-gray-400 mt-2 text-center">1,234 votes • Thanks for voting!</p>}
+  const commentaryList = commentaryData?.commentaryList || [];
+
+  return (
+    <div className="px-6">
+      {/* Live Match Header */}
+      <div className="bg-gradient-to-r from-red-50 to-orange-50 dark:from-red-900/20 dark:to-orange-900/20 rounded-2xl p-4 mb-4 border border-red-100 dark:border-red-800/30">
+        <div className="flex items-center gap-2 mb-2">
+          <span className="w-2 h-2 bg-red-500 rounded-full animate-pulse" />
+          <span className="text-[10px] font-bold text-red-500">LIVE COMMENTARY</span>
+        </div>
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <span className="text-lg">{liveMatch.team1Flag}</span>
+            <span className="text-sm font-bold text-gray-800 dark:text-gray-200">{liveMatch.team1Short}</span>
           </div>
-        );
-      })}
+          <span className="text-xs text-gray-400">vs</span>
+          <div className="flex items-center gap-2">
+            <span className="text-sm font-bold text-gray-800 dark:text-gray-200">{liveMatch.team2Short}</span>
+            <span className="text-lg">{liveMatch.team2Flag}</span>
+          </div>
+        </div>
+        <p className="text-sm font-black text-gray-900 dark:text-gray-100 text-center mt-2">
+          {liveMatch.team1Score} {liveMatch.team2Score ? `| ${liveMatch.team2Score}` : ''}
+        </p>
+      </div>
+
+      {/* Commentary List */}
+      {commentaryList.length > 0 ? (
+        <div className="space-y-2">
+          {commentaryList.map((item: any, idx: number) => (
+            <div key={idx} className="bg-white dark:bg-gray-800 rounded-xl p-3 border border-gray-100 dark:border-gray-700">
+              <div className="flex items-start gap-2">
+                <div className="w-6 h-6 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center flex-shrink-0 mt-0.5">
+                  <span className="text-[10px] font-bold text-green-600 dark:text-green-400">
+                    {item.over || `${idx + 1}`}
+                  </span>
+                </div>
+                <div>
+                  <p className="text-xs text-gray-800 dark:text-gray-200 leading-relaxed">{item.text || item.commentary || 'Ball in progress...'}</p>
+                  {item.timestamp && <p className="text-[9px] text-gray-400 mt-1">{item.timestamp}</p>}
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      ) : (
+        <div className="space-y-2">
+          {/* Fallback commentary when no API data */}
+          <CommentaryItem over="42.3" text="Kohli drives through covers — FOUR! Magnificent shot!" />
+          <CommentaryItem over="42.2" text="Dot ball. Good length outside off, Kohli leaves it alone." />
+          <CommentaryItem over="42.1" text="SIX! Kohli launches it over long-on! What a shot! 🎉" />
+          <CommentaryItem over="41.6" text="Single to fine leg. Rahul rotates the strike." />
+          <CommentaryItem over="41.5" text="FOUR! Rahul cuts hard past point. Boundary!" />
+          <CommentaryItem over="41.4" text="Dot ball. Tight line from Starc." />
+          <CommentaryItem over="41.3" text="Kohli on 98... tension building!" />
+          <CommentaryItem over="41.2" text="Two runs. Kohli pushes to mid-wicket, quick running." />
+          <CommentaryItem over="41.1" text="Kohli drives to long-off for a single. 97 now!" />
+          <CommentaryItem over="40.6" text="End of over. IND 271/4. Kohli 96*, Rahul 41*" />
+        </div>
+      )}
+    </div>
+  );
+}
+
+function CommentaryItem({ over, text }: { over: string; text: string }) {
+  const isHighlight = text.includes('SIX') || text.includes('FOUR') || text.includes('WICKET');
+  return (
+    <div className={`rounded-xl p-3 border ${
+      isHighlight 
+        ? 'bg-yellow-50 dark:bg-yellow-900/20 border-yellow-200 dark:border-yellow-800/30' 
+        : 'bg-white dark:bg-gray-800 border-gray-100 dark:border-gray-700'
+    }`}>
+      <div className="flex items-start gap-2">
+        <div className={`w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5 ${
+          isHighlight ? 'bg-yellow-100 dark:bg-yellow-900/40' : 'bg-green-100 dark:bg-green-900/30'
+        }`}>
+          <span className={`text-[10px] font-bold ${isHighlight ? 'text-yellow-600 dark:text-yellow-400' : 'text-green-600 dark:text-green-400'}`}>
+            {over}
+          </span>
+        </div>
+        <p className={`text-xs leading-relaxed ${isHighlight ? 'text-yellow-800 dark:text-yellow-200 font-medium' : 'text-gray-800 dark:text-gray-200'}`}>
+          {text}
+        </p>
+      </div>
     </div>
   );
 }

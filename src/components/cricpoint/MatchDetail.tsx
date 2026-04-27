@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { ArrowLeft, Info, BarChart3, Clock, Mic } from 'lucide-react';
+import { ArrowLeft, Info, BarChart3, Clock, Mic, MapPin } from 'lucide-react';
 import { useCricPointStore, type MatchTab } from '@/store/cricpoint-store';
 import InfoSection from './InfoSection';
 import ScorecardSection from './ScorecardSection';
@@ -10,7 +10,7 @@ import CommentarySection from './CommentarySection';
 
 const matchTabs: { id: MatchTab; label: string; icon: React.ReactNode }[] = [
   { id: 'info', label: 'Info', icon: <Info className="w-3.5 h-3.5" /> },
-  { id: 'scorecard', label: 'Scorecard', icon: <BarChart3 className="w-3.5 h-3.5" /> },
+  { id: 'scorecard', label: 'Points', icon: <BarChart3 className="w-3.5 h-3.5" /> },
   { id: 'overs', label: 'Overs', icon: <Clock className="w-3.5 h-3.5" /> },
   { id: 'commentary', label: 'Commentary', icon: <Mic className="w-3.5 h-3.5" /> },
 ];

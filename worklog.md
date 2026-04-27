@@ -42,3 +42,39 @@ Stage Summary:
 - Bottom nav: Home, Pin, Points, AI Chat
 - Firebase configured, Cricket API integrated with fallback mock data
 - AI chat with content safety filter
+
+---
+Task ID: 2
+Agent: Main Agent
+Task: Rebuild CricPoint app with new bottom nav structure (Home | Points | Commentary | Pin)
+
+Work Log:
+- Analyzed user's new specification and uploaded screenshot using VLM
+- Screenshot showed CricBuzz-style app with Scoreboard/Commentary/Alerts bottom nav
+- User wants: Scoreboard→Points Table, Alerts→Pin, Pin is toggle not page
+- Updated Zustand store: matchPinned boolean + togglePin/setPin actions
+- Updated BottomTab type: "home" | "points" | "commentary" (pin removed as tab)
+- Rewrote BottomNav: 3 tabs (Home, Points, Commentary) + Pin toggle button
+- Rewrote Dashboard with new tab structure:
+  - Home tab: Match slider + completed matches + posts + footer
+  - Points tab: Shows PointTable component
+  - Commentary tab: Shows LiveCommentary component with auto-refresh
+  - Pin overlay: Shows when matchPinned=true, sticky below header
+- Added auto-refresh every 10 seconds for live matches
+- Added scroll-to-top floating button (appears after scrolling 400px)
+- Fixed sticky bottom nav (always visible with fixed positioning)
+- Rewrote PinSection as overlay widget with green border + close button
+- Updated MatchSlider: Score card style + Points Table/Country/Pin buttons below each match
+- Updated MatchDetail: "Scorecard" tab renamed to "Points"
+- Fixed lint errors (setLoading in effect, Mic import)
+- Verified dev server running and all pages loading
+
+Stage Summary:
+- New bottom nav: Home | Points | Commentary | [Pin toggle]
+- Pin is now a toggle (ON/OFF) that shows/hides pinned match overlay
+- Live score auto-refreshes every 10 seconds
+- Scroll-to-top floating button added
+- Points Table accessible from Points tab and from slider cards
+- Commentary tab shows live commentary with auto-refresh
+- Dashboard logo made bigger (w-12 h-12)
+- Bottom footer with CricPoint branding
