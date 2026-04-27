@@ -2,7 +2,6 @@
 
 import { motion } from 'framer-motion';
 
-// Pre-computed values to avoid hydration mismatch
 const PARTICLES = [
   { w: 80, h: 90, left: 12, top: 8, xOff: 5, dur: 3.2 },
   { w: 95, h: 70, left: 65, top: 15, xOff: -8, dur: 4.1 },
@@ -34,30 +33,21 @@ export default function SplashScreen({ onComplete }: { onComplete: () => void })
               top: `${p.top}%`,
               background: 'radial-gradient(circle, #fbbf24, transparent)',
             }}
-            animate={{
-              y: [0, -30, 0],
-              x: [0, p.xOff, 0],
-              scale: [1, 1.2, 1],
-            }}
-            transition={{
-              duration: p.dur,
-              repeat: Infinity,
-              delay: i * 0.5,
-            }}
+            animate={{ y: [0, -30, 0], x: [0, p.xOff, 0], scale: [1, 1.2, 1] }}
+            transition={{ duration: p.dur, repeat: Infinity, delay: i * 0.5 }}
           />
         ))}
       </div>
 
-      {/* Logo Container */}
+      {/* Logo Only - no text */}
       <motion.div
         className="relative z-10 flex flex-col items-center"
         initial={{ scale: 0.5, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
         transition={{ duration: 0.8, ease: "easeOut" }}
       >
-        {/* CricPoint Logo Image */}
         <motion.div
-          className="relative w-36 h-36 mb-4"
+          className="relative w-40 h-40 mb-6"
           initial={{ rotate: -10 }}
           animate={{ rotate: 0 }}
           transition={{ delay: 0.3, duration: 0.6, ease: "easeOut" }}
@@ -68,52 +58,38 @@ export default function SplashScreen({ onComplete }: { onComplete: () => void })
             className="w-full h-full object-contain drop-shadow-2xl"
           />
         </motion.div>
-
-        {/* App Name */}
-        <motion.h1
-          className="text-4xl font-black text-white tracking-wider"
-          initial={{ y: 20, opacity: 0 }}
-          animate={{ y: 0, opacity: 1 }}
-          transition={{ delay: 0.5, duration: 0.6 }}
-        >
-          Cric<span className="text-yellow-400">Point</span>
-        </motion.h1>
-
-        <motion.p
-          className="text-green-300 mt-2 text-sm font-medium tracking-widest uppercase"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.8, duration: 0.5 }}
-        >
-          Live Scores. Every Point.
-        </motion.p>
       </motion.div>
 
-      {/* Loading Bar */}
+      {/* Green Loading Animation */}
       <motion.div
-        className="absolute bottom-24 w-48 h-1 bg-green-900/50 rounded-full overflow-hidden z-10"
+        className="absolute bottom-24 z-10 flex flex-col items-center"
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
-        transition={{ delay: 1 }}
+        transition={{ delay: 0.8 }}
       >
-        <motion.div
-          className="h-full bg-gradient-to-r from-yellow-400 to-green-400 rounded-full"
-          initial={{ width: "0%" }}
-          animate={{ width: "100%" }}
-          transition={{ delay: 1.2, duration: 2, ease: "easeInOut" }}
-          onAnimationComplete={onComplete}
-        />
-      </motion.div>
+        {/* Animated dots */}
+        <div className="flex gap-2 mb-4">
+          {[0, 1, 2].map((i) => (
+            <motion.div
+              key={i}
+              className="w-2.5 h-2.5 bg-green-400 rounded-full"
+              animate={{ scale: [1, 1.5, 1], opacity: [0.5, 1, 0.5] }}
+              transition={{ duration: 1, repeat: Infinity, delay: i * 0.2 }}
+            />
+          ))}
+        </div>
 
-      {/* Loading text */}
-      <motion.p
-        className="absolute bottom-16 text-green-400/60 text-xs tracking-widest z-10"
-        initial={{ opacity: 0 }}
-        animate={{ opacity: [0, 1, 0] }}
-        transition={{ delay: 1.5, duration: 1.5, repeat: Infinity }}
-      >
-        Loading...
-      </motion.p>
+        {/* Green loading bar */}
+        <div className="w-48 h-1.5 bg-green-900/50 rounded-full overflow-hidden">
+          <motion.div
+            className="h-full bg-gradient-to-r from-green-400 to-emerald-300 rounded-full"
+            initial={{ width: "0%" }}
+            animate={{ width: "100%" }}
+            transition={{ delay: 1, duration: 2.2, ease: "easeInOut" }}
+            onAnimationComplete={onComplete}
+          />
+        </div>
+      </motion.div>
     </motion.div>
   );
 }
