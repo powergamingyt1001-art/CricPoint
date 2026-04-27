@@ -1,8 +1,9 @@
 import { create } from "zustand";
 
 export type AppView = "splash" | "dashboard" | "match-detail";
-export type BottomTab = "home" | "points" | "commentary";
+export type BottomTab = "home" | "match" | "ai" | "poll" | "more";
 export type MatchTab = "info" | "scorecard" | "overs" | "commentary";
+export type MatchFilter = "upcoming" | "complete";
 
 interface CricPointState {
   currentView: AppView;
@@ -10,6 +11,7 @@ interface CricPointState {
   selectedMatchId: string | null;
   selectedMatchData: MatchBasic | null;
   matchPinned: boolean;
+  matchFilter: MatchFilter;
 
   setView: (view: AppView) => void;
   setActiveTab: (tab: BottomTab) => void;
@@ -17,6 +19,7 @@ interface CricPointState {
   goBack: () => void;
   togglePin: () => void;
   setPin: (val: boolean) => void;
+  setMatchFilter: (filter: MatchFilter) => void;
 }
 
 export interface MatchBasic {
@@ -43,6 +46,7 @@ export const useCricPointStore = create<CricPointState>((set) => ({
   selectedMatchId: null,
   selectedMatchData: null,
   matchPinned: false,
+  matchFilter: "upcoming",
 
   setView: (view) => set({ currentView: view }),
   setActiveTab: (tab) => set({ activeTab: tab }),
@@ -51,4 +55,5 @@ export const useCricPointStore = create<CricPointState>((set) => ({
   goBack: () => set({ currentView: "dashboard", selectedMatchId: null, selectedMatchData: null }),
   togglePin: () => set((s) => ({ matchPinned: !s.matchPinned })),
   setPin: (val) => set({ matchPinned: val }),
+  setMatchFilter: (filter) => set({ matchFilter: filter }),
 }));
