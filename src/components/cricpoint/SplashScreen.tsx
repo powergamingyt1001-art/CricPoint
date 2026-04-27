@@ -2,6 +2,16 @@
 
 import { motion } from 'framer-motion';
 
+// Pre-computed values to avoid hydration mismatch from Math.random()
+const PARTICLES = [
+  { w: 80, h: 90, left: 12, top: 8, xOff: 5, dur: 3.2 },
+  { w: 95, h: 70, left: 65, top: 15, xOff: -8, dur: 4.1 },
+  { w: 60, h: 110, left: 35, top: 55, xOff: 3, dur: 3.5 },
+  { w: 100, h: 65, left: 78, top: 40, xOff: -6, dur: 4.5 },
+  { w: 75, h: 85, left: 22, top: 72, xOff: 7, dur: 3.8 },
+  { w: 90, h: 100, left: 55, top: 30, xOff: -4, dur: 4.3 },
+];
+
 export default function SplashScreen({ onComplete }: { onComplete: () => void }) {
   return (
     <motion.div
@@ -11,26 +21,26 @@ export default function SplashScreen({ onComplete }: { onComplete: () => void })
       exit={{ opacity: 0 }}
       transition={{ duration: 0.5 }}
     >
-      {/* Cricket ball animation background */}
+      {/* Background particles */}
       <div className="absolute inset-0 overflow-hidden">
-        {[...Array(6)].map((_, i) => (
+        {PARTICLES.map((p, i) => (
           <motion.div
             key={i}
             className="absolute rounded-full opacity-10"
             style={{
-              width: Math.random() * 100 + 50,
-              height: Math.random() * 100 + 50,
-              left: `${Math.random() * 100}%`,
-              top: `${Math.random() * 100}%`,
+              width: p.w,
+              height: p.h,
+              left: `${p.left}%`,
+              top: `${p.top}%`,
               background: 'radial-gradient(circle, #fbbf24, transparent)',
             }}
             animate={{
               y: [0, -30, 0],
-              x: [0, Math.random() * 20 - 10, 0],
+              x: [0, p.xOff, 0],
               scale: [1, 1.2, 1],
             }}
             transition={{
-              duration: 3 + Math.random() * 2,
+              duration: p.dur,
               repeat: Infinity,
               delay: i * 0.5,
             }}
