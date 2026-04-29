@@ -51,6 +51,7 @@ export interface MatchBasic {
   tossWinner?: string;
   tossChoice?: string;
   date?: string;
+  seriesId?: string;
 }
 
 export const useCricPointStore = create<CricPointState>((set) => ({

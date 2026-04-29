@@ -10,8 +10,6 @@ import BottomNav from './BottomNav';
 import AIChat from './AIChat';
 import { motion, AnimatePresence } from 'framer-motion';
 
-// No more hardcoded fallback - real data from API!
-
 const FAKE_COMMENT_NAMES = [
   'Rahul_King', 'Cricket_Fan99', 'IPL_Lover', 'Kohli_Army', 'Hitman_Fan',
   'Dhoni_Bhakt', 'Bumrah_Fan', 'Cricket_Guru', 'SixerKing', 'StarkFan',
@@ -158,6 +156,8 @@ export default function Dashboard() {
   const [pullDistance, setPullDistance] = useState(0);
   // Header ad: shows periodically, makes header area bigger (~25-30% of screen)
   const [showHeaderAd, setShowHeaderAd] = useState(false);
+  // Completed matches rotation: show only 3 at a time, rotate every 30 seconds
+  const [completedPage, setCompletedPage] = useState(0);
 
   const fetchMatches = useCallback(async () => {
     try {
@@ -184,6 +184,26 @@ export default function Dashboard() {
     const interval = setInterval(fetchMatches, 10000);
     return () => { cancelled = true; clearInterval(interval); };
   }, [fetchMatches]);
+
+  // Auto-rotate completed matches every 30 seconds
+  useEffect(() => {
+    const completedMatches = matches.filter(m => m.matchEnded || (!m.isLive && m.status && (
+      m.status.toLowerCase().includes('won') ||
+      m.status.toLowerCase().includes('lost') ||
+      m.status.toLowerCase().includes('draw') ||
+      m.status.toLowerCase().includes('tied') ||
+      m.status.toLowerCase().includes('abandon')
+    )));
+
+    if (completedMatches.length <= 3) return;
+
+    const totalPages = Math.ceil(completedMatches.length / 3);
+    const rotationInterval = setInterval(() => {
+      setCompletedPage(prev => (prev + 1) % totalPages);
+    }, 30000); // Rotate every 30 seconds
+
+    return () => clearInterval(rotationInterval);
+  }, [matches]);
 
   // Refresh with rate limiting
   const handleRefresh = async () => {
@@ -306,8 +326,22 @@ export default function Dashboard() {
   }, []);
 
   const liveMatches = matches.filter(m => m.isLive);
-  const completedMatches = matches.filter(m => !m.isLive);
-  const upcomingMatches = matches.filter(m => !m.isLive && m.status && m.status.toLowerCase().includes('yet'));
+  const completedMatches = matches.filter(m => m.matchEnded || (!m.isLive && m.status && (
+    m.status.toLowerCase().includes('won') ||
+    m.status.toLowerCase().includes('lost') ||
+    m.status.toLowerCase().includes('draw') ||
+    m.status.toLowerCase().includes('tied') ||
+    m.status.toLowerCase().includes('abandon')
+  )));
+  const upcomingMatches = matches.filter(m => !m.isLive && !completedMatches.includes(m));
+
+  // Paginate completed matches: show only 3 at a time
+  const COMPLETED_PER_PAGE = 3;
+  const totalCompletedPages = Math.ceil(completedMatches.length / COMPLETED_PER_PAGE);
+  const currentCompletedMatches = completedMatches.slice(
+    completedPage * COMPLETED_PER_PAGE,
+    (completedPage + 1) * COMPLETED_PER_PAGE
+  );
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex flex-col">
@@ -384,39 +418,80 @@ export default function Dashboard() {
             {/* Points Table */}
             {showPointTable && <PointTable />}
 
-            {/* Green Box: Completed Matches */}
+            {/* Green Box: Completed Matches - Only 3 at a time, auto-rotate */}
             <div className="mx-4 mt-3 bg-green-50 dark:bg-green-900/20 rounded-2xl border-2 border-green-500 dark:border-green-600 p-3 shadow-sm">
-              <div className="flex items-center gap-2 mb-3">
-                <Clock className="w-4 h-4 text-green-600 dark:text-green-400" />
-                <h2 className="text-sm font-bold text-green-700 dark:text-green-300">Completed Matches</h2>
+              <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center gap-2">
+                  <Clock className="w-4 h-4 text-green-600 dark:text-green-400" />
+                  <h2 className="text-sm font-bold text-green-700 dark:text-green-300">Completed Matches</h2>
+                </div>
+                {totalCompletedPages > 1 && (
+                  <div className="flex items-center gap-1">
+                    <button
+                      onClick={() => setCompletedPage(prev => prev > 0 ? prev - 1 : totalCompletedPages - 1)}
+                      className="w-5 h-5 flex items-center justify-center rounded-full bg-green-200 dark:bg-green-800 text-green-700 dark:text-green-300 text-[10px] font-bold"
+                    >
+                      ‹
+                    </button>
+                    <span className="text-[9px] font-bold text-green-600 dark:text-green-400">
+                      {completedPage + 1}/{totalCompletedPages}
+                    </span>
+                    <button
+                      onClick={() => setCompletedPage(prev => (prev + 1) % totalCompletedPages)}
+                      className="w-5 h-5 flex items-center justify-center rounded-full bg-green-200 dark:bg-green-800 text-green-700 dark:text-green-300 text-[10px] font-bold"
+                    >
+                      ›
+                    </button>
+                  </div>
+                )}
               </div>
-              <div className="space-y-2">
-                {completedMatches.map((match) => (
-                  <button
-                    key={match.id}
-                    onClick={() => selectMatch(match.id, match)}
-                    className="w-full text-left bg-white dark:bg-gray-800 rounded-xl p-3 border border-green-200 dark:border-green-800/50 hover:shadow-sm transition-all active:scale-[0.99]"
-                  >
-                    <div className="flex items-center justify-between mb-1">
-                      <span className="text-[9px] font-semibold text-gray-400 uppercase tracking-wide">{match.matchType} · {match.venue}</span>
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <span className="text-sm">{match.team1Flag}</span>
-                        <span className="text-xs font-bold text-gray-800 dark:text-gray-200">{match.team1Short}</span>
-                        <span className="text-[9px] text-gray-400">vs</span>
-                        <span className="text-xs font-bold text-gray-700 dark:text-gray-300">{match.team2Short}</span>
-                        <span className="text-sm">{match.team2Flag}</span>
+              <AnimatePresence mode="wait">
+                <motion.div
+                  key={completedPage}
+                  initial={{ opacity: 0, x: 20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: -20 }}
+                  transition={{ duration: 0.3 }}
+                  className="space-y-2"
+                >
+                  {currentCompletedMatches.map((match) => (
+                    <button
+                      key={match.id}
+                      onClick={() => selectMatch(match.id, match)}
+                      className="w-full text-left bg-white dark:bg-gray-800 rounded-xl p-3 border border-green-200 dark:border-green-800/50 hover:shadow-sm transition-all active:scale-[0.99]"
+                    >
+                      <div className="flex items-center justify-between mb-1">
+                        <span className="text-[9px] font-semibold text-gray-400 uppercase tracking-wide max-w-[70%] truncate">{match.matchType} · {match.venue}</span>
                       </div>
-                      <span className="text-[10px] text-green-600 dark:text-green-400 font-medium max-w-[130px] truncate">{match.status}</span>
-                    </div>
-                    <div className="flex items-center justify-between mt-1">
-                      <span className="text-[10px] text-gray-500">{match.team1Score}</span>
-                      <span className="text-[10px] text-gray-500">{match.team2Score}</span>
-                    </div>
-                  </button>
-                ))}
-              </div>
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          {match.team1Img ? (
+                            <img src={match.team1Img} alt={match.team1Short} className="w-5 h-5 object-contain" />
+                          ) : (
+                            <span className="text-sm">{match.team1Flag}</span>
+                          )}
+                          <span className="text-xs font-bold text-gray-800 dark:text-gray-200">{match.team1Short}</span>
+                          <span className="text-[9px] text-gray-400">vs</span>
+                          <span className="text-xs font-bold text-gray-700 dark:text-gray-300">{match.team2Short}</span>
+                          {match.team2Img ? (
+                            <img src={match.team2Img} alt={match.team2Short} className="w-5 h-5 object-contain" />
+                          ) : (
+                            <span className="text-sm">{match.team2Flag}</span>
+                          )}
+                        </div>
+                        <span className="text-[10px] text-green-600 dark:text-green-400 font-medium max-w-[130px] truncate">{match.status}</span>
+                      </div>
+                      <div className="flex items-center justify-between mt-1">
+                        <span className="text-[10px] text-gray-500 font-medium">{match.team1Score || '-'}</span>
+                        <span className="text-[10px] text-gray-500 font-medium">{match.team2Score || '-'}</span>
+                      </div>
+                    </button>
+                  ))}
+                </motion.div>
+              </AnimatePresence>
+              {totalCompletedPages > 1 && (
+                <p className="text-[8px] text-center text-green-500/60 mt-2">Auto-rotates every 30s • See all in Match tab</p>
+              )}
             </div>
 
             {/* Ad Banner after completed matches */}
@@ -629,7 +704,7 @@ function MatchListItem({ match, onClick }: { match: MatchBasic; onClick: () => v
       className="w-full text-left bg-white dark:bg-gray-800 rounded-xl p-3 border border-gray-100 dark:border-gray-700 hover:shadow-sm transition-all active:scale-[0.99]"
     >
       <div className="flex items-center justify-between mb-1">
-        <span className="text-[9px] font-semibold text-gray-400 uppercase tracking-wide">{match.matchType}</span>
+        <span className="text-[9px] font-semibold text-gray-400 uppercase tracking-wide max-w-[70%] truncate">{match.matchType}</span>
         {match.isLive && (
           <span className="flex items-center gap-1 text-[9px] font-bold text-red-500">
             <span className="w-1.5 h-1.5 bg-red-500 rounded-full animate-pulse" />LIVE
@@ -638,13 +713,21 @@ function MatchListItem({ match, onClick }: { match: MatchBasic; onClick: () => v
       </div>
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <span className="text-base">{match.team1Flag}</span>
+          {match.team1Img ? (
+            <img src={match.team1Img} alt={match.team1Short} className="w-6 h-6 object-contain" />
+          ) : (
+            <span className="text-base">{match.team1Flag}</span>
+          )}
           <span className="text-xs font-bold text-gray-800 dark:text-gray-200">{match.team1Short}</span>
         </div>
         <div className="text-[10px] text-gray-400">vs</div>
         <div className="flex items-center gap-2">
           <span className="text-xs font-bold text-gray-700 dark:text-gray-300">{match.team2Short}</span>
-          <span className="text-base">{match.team2Flag}</span>
+          {match.team2Img ? (
+            <img src={match.team2Img} alt={match.team2Short} className="w-6 h-6 object-contain" />
+          ) : (
+            <span className="text-base">{match.team2Flag}</span>
+          )}
         </div>
       </div>
       <div className="flex items-center justify-between mt-1">
@@ -842,55 +925,57 @@ function PollsSection() {
 
 /* ===== ICC RANKING DIALOG ===== */
 function ICCRankingDialog() {
-  const [format, setFormat] = useState<'tests' | 'odi' | 't20'>('tests');
-  const data = ICC_RANKINGS[format];
+  const [format, setFormat] = useState<'tests' | 'odi' | 't20'>('odi');
 
   return (
-    <div className="px-4 pb-2">
-      <div className="flex items-center gap-2 mb-3">
+    <div className="p-4">
+      <div className="flex items-center gap-2 mb-4">
         <Trophy className="w-5 h-5 text-yellow-500" />
-        <h2 className="text-base font-bold text-gray-800 dark:text-gray-200">ICC Team Rankings</h2>
+        <h2 className="text-lg font-bold text-gray-800 dark:text-gray-200">ICC Rankings</h2>
       </div>
 
       {/* Format Tabs */}
-      <div className="flex gap-1.5 mb-3">
-        {(['tests', 'odi', 't20'] as const).map((f) => (
+      <div className="flex bg-gray-100 dark:bg-gray-700 rounded-xl p-1 mb-4">
+        {(['tests', 'odi', 't20'] as const).map((fmt) => (
           <button
-            key={f}
-            onClick={() => setFormat(f)}
+            key={fmt}
+            onClick={() => setFormat(fmt)}
             className={`flex-1 py-2 rounded-lg text-xs font-bold transition-all ${
-              format === f
-                ? 'bg-[#132244] text-green-400 shadow-md'
-                : 'bg-gray-100 dark:bg-gray-700 text-gray-500 hover:bg-gray-200 dark:hover:bg-gray-600'
+              format === fmt
+                ? 'bg-white dark:bg-gray-600 text-green-600 dark:text-green-400 shadow-sm'
+                : 'text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'
             }`}
           >
-            {f.toUpperCase()}
+            {fmt.toUpperCase()}
           </button>
         ))}
       </div>
 
       {/* Rankings Table */}
-      <div className="bg-gray-50 dark:bg-gray-700/50 rounded-xl overflow-hidden">
-        <div className="grid grid-cols-[2rem_1fr_3.5rem_3.5rem] gap-1 px-3 py-2 bg-gray-100 dark:bg-gray-700 text-[9px] font-bold text-gray-500 uppercase">
-          <span>#</span>
-          <span>Team</span>
-          <span className="text-center">Rating</span>
-          <span className="text-center">Points</span>
-        </div>
-        {data.map((entry, idx) => (
+      <div className="space-y-2">
+        {ICC_RANKINGS[format].map((team) => (
           <div
-            key={entry.team}
-            className={`grid grid-cols-[2rem_1fr_3.5rem_3.5rem] gap-1 px-3 py-2.5 items-center ${
-              idx < 3 ? 'bg-green-50/50 dark:bg-green-900/10' : ''
-            } ${idx !== data.length - 1 ? 'border-b border-gray-100 dark:border-gray-600/50' : ''}`}
+            key={team.team}
+            className={`flex items-center justify-between p-3 rounded-xl ${
+              team.rank <= 3 ? 'bg-green-50 dark:bg-green-900/10' : 'bg-gray-50 dark:bg-gray-700/50'
+            }`}
           >
-            <span className={`text-xs font-bold ${idx < 3 ? 'text-green-600' : 'text-gray-400'}`}>{entry.rank}</span>
-            <div className="flex items-center gap-1.5">
-              <span className="text-sm">{entry.flag}</span>
-              <span className="text-xs font-bold text-gray-800 dark:text-gray-200">{entry.team}</span>
+            <div className="flex items-center gap-3">
+              <span className={`w-6 h-6 flex items-center justify-center rounded-full text-xs font-bold ${
+                team.rank === 1 ? 'bg-yellow-400 text-yellow-900' :
+                team.rank === 2 ? 'bg-gray-300 text-gray-700' :
+                team.rank === 3 ? 'bg-amber-600 text-white' :
+                'bg-gray-200 dark:bg-gray-600 text-gray-600 dark:text-gray-300'
+              }`}>
+                {team.rank}
+              </span>
+              <span className="text-base">{team.flag}</span>
+              <span className="text-sm font-bold text-gray-800 dark:text-gray-200">{team.team}</span>
             </div>
-            <span className="text-xs text-center font-bold text-gray-900 dark:text-gray-100">{entry.rating}</span>
-            <span className="text-xs text-center text-gray-600 dark:text-gray-400">{entry.points.toLocaleString()}</span>
+            <div className="text-right">
+              <span className="text-sm font-bold text-gray-900 dark:text-gray-100">{team.rating}</span>
+              <p className="text-[9px] text-gray-400">{team.points} pts</p>
+            </div>
           </div>
         ))}
       </div>
@@ -900,91 +985,16 @@ function ICCRankingDialog() {
 
 /* ===== PLAYER RANKING DIALOG ===== */
 function PlayerRankingDialog() {
-  const [category, setCategory] = useState<'batting' | 'bowling' | 'allrounder'>('batting');
-
-  const BATTING_RANKS = [
-    { rank: 1, name: 'Virat Kohli', team: '🇮🇳', rating: 887 },
-    { rank: 2, name: 'Rohit Sharma', team: '🇮🇳', rating: 834 },
-    { rank: 3, name: 'Steve Smith', team: '🇦🇺', rating: 812 },
-    { rank: 4, name: 'Joe Root', team: '🏴󠁧󠁢󠁥󠁮󠁧󠁿', rating: 798 },
-    { rank: 5, name: 'Kane Williamson', team: '🇳🇿', rating: 785 },
-    { rank: 6, name: 'Babar Azam', team: '🇵🇰', rating: 762 },
-    { rank: 7, name: 'Travis Head', team: '🇦🇺', rating: 741 },
-    { rank: 8, name: 'Shubman Gill', team: '🇮🇳', rating: 728 },
-  ];
-
-  const BOWLING_RANKS = [
-    { rank: 1, name: 'Jasprit Bumrah', team: '🇮🇳', rating: 904 },
-    { rank: 2, name: 'Pat Cummins', team: '🇦🇺', rating: 862 },
-    { rank: 3, name: 'Josh Hazlewood', team: '🇦🇺', rating: 831 },
-    { rank: 4, name: 'Ravindra Jadeja', team: '🇮🇳', rating: 822 },
-    { rank: 5, name: 'Ravichandran Ashwin', team: '🇮🇳', rating: 810 },
-    { rank: 6, name: 'Shaheen Afridi', team: '🇵🇰', rating: 788 },
-    { rank: 7, name: 'Kagiso Rabada', team: '🇿🇦', rating: 775 },
-    { rank: 8, name: 'Mitchell Starc', team: '🇦🇺', rating: 761 },
-  ];
-
-  const ALLROUNDER_RANKS = [
-    { rank: 1, name: 'Ravindra Jadeja', team: '🇮🇳', rating: 438 },
-    { rank: 2, name: 'Ben Stokes', team: '🏴󠁧󠁢󠁥󠁮󠁧󠁿', rating: 412 },
-    { rank: 3, name: 'Ravichandran Ashwin', team: '🇮🇳', rating: 389 },
-    { rank: 4, name: 'Shakib Al Hasan', team: '🇧🇩', rating: 372 },
-    { rank: 5, name: 'Cameron Green', team: '🇦🇺', rating: 345 },
-    { rank: 6, name: 'Marco Jansen', team: '🇿🇦', rating: 321 },
-    { rank: 7, name: 'Axar Patel', team: '🇮🇳', rating: 308 },
-    { rank: 8, name: 'Mitchell Marsh', team: '🇦🇺', rating: 295 },
-  ];
-
-  const data = category === 'batting' ? BATTING_RANKS : category === 'bowling' ? BOWLING_RANKS : ALLROUNDER_RANKS;
-
   return (
-    <div className="px-4 pb-2">
-      <div className="flex items-center gap-2 mb-3">
+    <div className="p-4">
+      <div className="flex items-center gap-2 mb-4">
         <BarChart3 className="w-5 h-5 text-green-500" />
-        <h2 className="text-base font-bold text-gray-800 dark:text-gray-200">Player Rankings</h2>
+        <h2 className="text-lg font-bold text-gray-800 dark:text-gray-200">Player Rankings</h2>
       </div>
-
-      {/* Category Tabs */}
-      <div className="flex gap-1.5 mb-3">
-        {(['batting', 'bowling', 'allrounder'] as const).map((c) => (
-          <button
-            key={c}
-            onClick={() => setCategory(c)}
-            className={`flex-1 py-2 rounded-lg text-xs font-bold transition-all ${
-              category === c
-                ? 'bg-[#132244] text-green-400 shadow-md'
-                : 'bg-gray-100 dark:bg-gray-700 text-gray-500 hover:bg-gray-200 dark:hover:bg-gray-600'
-            }`}
-          >
-            {c.charAt(0).toUpperCase() + c.slice(1)}
-          </button>
-        ))}
-      </div>
-
-      {/* Rankings Table */}
-      <div className="bg-gray-50 dark:bg-gray-700/50 rounded-xl overflow-hidden">
-        <div className="grid grid-cols-[2rem_1fr_2.5rem_3rem] gap-1 px-3 py-2 bg-gray-100 dark:bg-gray-700 text-[9px] font-bold text-gray-500 uppercase">
-          <span>#</span>
-          <span>Player</span>
-          <span className="text-center"></span>
-          <span className="text-center">Rating</span>
-        </div>
-        {data.map((entry, idx) => (
-          <div
-            key={entry.name}
-            className={`grid grid-cols-[2rem_1fr_2.5rem_3rem] gap-1 px-3 py-2.5 items-center ${
-              idx < 3 ? 'bg-green-50/50 dark:bg-green-900/10' : ''
-            } ${idx !== data.length - 1 ? 'border-b border-gray-100 dark:border-gray-600/50' : ''}`}
-          >
-            <span className={`text-xs font-bold ${idx < 3 ? 'text-green-600' : 'text-gray-400'}`}>{entry.rank}</span>
-            <div className="flex items-center gap-1.5">
-              <span className="text-sm">{entry.team}</span>
-              <span className="text-xs font-bold text-gray-800 dark:text-gray-200 truncate">{entry.name}</span>
-            </div>
-            <span></span>
-            <span className="text-xs text-center font-bold text-gray-900 dark:text-gray-100">{entry.rating}</span>
-          </div>
-        ))}
+      <div className="text-center py-8">
+        <BarChart3 className="w-10 h-10 text-gray-300 mx-auto mb-2" />
+        <p className="text-xs text-gray-400">Player rankings coming soon!</p>
+        <p className="text-[10px] text-gray-400 mt-1">We are working on integrating ICC player rankings data.</p>
       </div>
     </div>
   );
@@ -992,89 +1002,35 @@ function PlayerRankingDialog() {
 
 /* ===== SETTINGS DIALOG ===== */
 function SettingsDialog() {
-  const [notifications, setNotifications] = useState(true);
-  const [darkMode, setDarkMode] = useState(false);
-  const [matchAlerts, setMatchAlerts] = useState(true);
-  const [autoRefresh, setAutoRefresh] = useState(true);
-
   return (
-    <div className="px-4 pb-2">
-      <div className="flex items-center gap-2 mb-3">
+    <div className="p-4">
+      <div className="flex items-center gap-2 mb-4">
         <Settings className="w-5 h-5 text-gray-500" />
-        <h2 className="text-base font-bold text-gray-800 dark:text-gray-200">Settings</h2>
+        <h2 className="text-lg font-bold text-gray-800 dark:text-gray-200">Settings</h2>
       </div>
-
-      <div className="space-y-1">
-        <SettingToggle
-          icon={<Bell className="w-4 h-4 text-yellow-500" />}
-          label="Push Notifications"
-          description="Get notified about live scores"
-          enabled={notifications}
-          onToggle={() => setNotifications(!notifications)}
-        />
-        <SettingToggle
-          icon={<Moon className="w-4 h-4 text-purple-500" />}
-          label="Dark Mode"
-          description="Switch to dark theme"
-          enabled={darkMode}
-          onToggle={() => setDarkMode(!darkMode)}
-        />
-        <SettingToggle
-          icon={<Radio className="w-4 h-4 text-red-500" />}
-          label="Match Alerts"
-          description="Alerts when match starts"
-          enabled={matchAlerts}
-          onToggle={() => setMatchAlerts(!matchAlerts)}
-        />
-        <SettingToggle
-          icon={<RefreshCw className="w-4 h-4 text-green-500" />}
-          label="Auto Refresh"
-          description="Auto-refresh scores every 10s"
-          enabled={autoRefresh}
-          onToggle={() => setAutoRefresh(!autoRefresh)}
-        />
-      </div>
-
-      <div className="mt-4 pt-3 border-t border-gray-100 dark:border-gray-700">
-        <div className="flex items-center gap-2 mb-2">
-          <Shield className="w-4 h-4 text-blue-500" />
-          <span className="text-xs font-bold text-gray-700 dark:text-gray-300">Privacy & Security</span>
+      <div className="space-y-3">
+        <div className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700/50 rounded-xl">
+          <div className="flex items-center gap-2">
+            <Bell className="w-4 h-4 text-gray-500" />
+            <span className="text-sm text-gray-700 dark:text-gray-300">Notifications</span>
+          </div>
+          <span className="text-xs text-gray-400">Coming soon</span>
         </div>
-        <div className="space-y-2">
-          <button className="w-full text-left py-2 px-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg text-xs text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors">
-            Clear Cache
-          </button>
-          <button className="w-full text-left py-2 px-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg text-xs text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors">
-            Reset Preferences
-          </button>
+        <div className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700/50 rounded-xl">
+          <div className="flex items-center gap-2">
+            <Shield className="w-4 h-4 text-gray-500" />
+            <span className="text-sm text-gray-700 dark:text-gray-300">Privacy</span>
+          </div>
+          <span className="text-xs text-gray-400">Coming soon</span>
+        </div>
+        <div className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700/50 rounded-xl">
+          <div className="flex items-center gap-2">
+            <Star className="w-4 h-4 text-gray-500" />
+            <span className="text-sm text-gray-700 dark:text-gray-300">Rate App</span>
+          </div>
+          <span className="text-xs text-gray-400">Coming soon</span>
         </div>
       </div>
-    </div>
-  );
-}
-
-function SettingToggle({ icon, label, description, enabled, onToggle }: {
-  icon: React.ReactNode;
-  label: string;
-  description: string;
-  enabled: boolean;
-  onToggle: () => void;
-}) {
-  return (
-    <div className="flex items-center justify-between py-2.5 px-1">
-      <div className="flex items-center gap-3">
-        {icon}
-        <div>
-          <p className="text-xs font-bold text-gray-800 dark:text-gray-200">{label}</p>
-          <p className="text-[10px] text-gray-400">{description}</p>
-        </div>
-      </div>
-      <button
-        onClick={onToggle}
-        className={`w-10 h-6 rounded-full transition-all relative ${enabled ? 'bg-green-500' : 'bg-gray-300 dark:bg-gray-600'}`}
-      >
-        <div className={`absolute top-0.5 w-5 h-5 bg-white rounded-full shadow-sm transition-all ${enabled ? 'left-4.5' : 'left-0.5'}`} />
-      </button>
     </div>
   );
 }
@@ -1082,48 +1038,28 @@ function SettingToggle({ icon, label, description, enabled, onToggle }: {
 /* ===== ABOUT DIALOG ===== */
 function AboutDialog() {
   return (
-    <div className="px-4 pb-2">
-      <div className="flex items-center gap-2 mb-3">
+    <div className="p-4">
+      <div className="flex items-center gap-2 mb-4">
         <Info className="w-5 h-5 text-blue-500" />
-        <h2 className="text-base font-bold text-gray-800 dark:text-gray-200">About CricPoint</h2>
+        <h2 className="text-lg font-bold text-gray-800 dark:text-gray-200">About CricPoint</h2>
       </div>
-
-      {/* App Logo & Info */}
-      <div className="flex flex-col items-center py-4">
-        <img src="/cricpoint-logo-dashboard.png" alt="CricPoint" className="w-20 h-20 object-contain mb-3" />
-        <h3 className="text-lg font-black text-gray-800 dark:text-gray-200">
+      <div className="text-center py-4">
+        <img src="/cricpoint-logo-intro.png" alt="CricPoint" className="w-24 h-24 mx-auto object-contain mb-4" />
+        <h3 className="text-xl font-black text-gray-800 dark:text-gray-200">
           Cric<span className="text-green-500">Point</span>
         </h3>
-        <p className="text-xs text-gray-400 mt-1">Version 1.0.0</p>
-      </div>
-
-      <div className="space-y-2">
-        <div className="flex items-start gap-3 p-3 bg-gray-50 dark:bg-gray-700/50 rounded-xl">
-          <Star className="w-4 h-4 text-yellow-500 mt-0.5 flex-shrink-0" />
-          <div>
-            <p className="text-xs font-bold text-gray-800 dark:text-gray-200">Live Cricket Scores</p>
-            <p className="text-[10px] text-gray-400">Real-time scores from matches around the world</p>
-          </div>
+        <p className="text-xs text-gray-400 mt-1">Version 2.0</p>
+        <p className="text-xs text-gray-500 dark:text-gray-400 mt-3 max-w-xs mx-auto">
+          Your one-stop destination for live cricket scores, match updates, points tables, and AI-powered cricket insights.
+        </p>
+        <div className="mt-4 p-3 bg-green-50 dark:bg-green-900/10 rounded-xl border border-green-100 dark:border-green-800/30">
+          <p className="text-[10px] text-green-600 dark:text-green-400 font-medium">
+            📡 Powered by CricketData.org API<br/>
+            🏏 Real-time live scores & updates<br/>
+            🤖 AI Cricket Assistant<br/>
+          </p>
         </div>
-        <div className="flex items-start gap-3 p-3 bg-gray-50 dark:bg-gray-700/50 rounded-xl">
-          <Globe className="w-4 h-4 text-blue-500 mt-0.5 flex-shrink-0" />
-          <div>
-            <p className="text-xs font-bold text-gray-800 dark:text-gray-200">ICC Rankings</p>
-            <p className="text-[10px] text-gray-400">Team & player rankings across all formats</p>
-          </div>
-        </div>
-        <div className="flex items-start gap-3 p-3 bg-gray-50 dark:bg-gray-700/50 rounded-xl">
-          <HelpCircle className="w-4 h-4 text-green-500 mt-0.5 flex-shrink-0" />
-          <div>
-            <p className="text-xs font-bold text-gray-800 dark:text-gray-200">AI Cricket Assistant</p>
-            <p className="text-[10px] text-gray-400">Ask anything about cricket with our AI chat</p>
-          </div>
-        </div>
-      </div>
-
-      <div className="mt-4 pt-3 border-t border-gray-100 dark:border-gray-700 text-center">
-        <p className="text-[10px] text-gray-400">Made with ❤️ for Cricket Fans</p>
-        <p className="text-[9px] text-gray-300 dark:text-gray-600 mt-1">© 2026 CricPoint. All rights reserved.</p>
+        <p className="text-[10px] text-gray-400 mt-4">Made with ❤️ for cricket fans</p>
       </div>
     </div>
   );

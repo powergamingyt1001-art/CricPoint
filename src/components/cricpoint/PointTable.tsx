@@ -1,78 +1,145 @@
 'use client';
 
-import { Trophy } from 'lucide-react';
+import { useEffect, useState, useCallback } from 'react';
+import { Trophy, Loader2, RefreshCw } from 'lucide-react';
+import Image from 'next/image';
 
 interface PointTableEntry {
+  rank: number;
   team: string;
   shortName: string;
-  flag: string;
+  img?: string;
   matches: number;
   won: number;
   lost: number;
+  tied: number;
   noResult: number;
   points: number;
   nrr: string;
 }
 
-const MOCK_POINTS_TABLE: PointTableEntry[] = [
-  { team: "India", shortName: "IND", flag: "🇮🇳", matches: 8, won: 6, lost: 1, noResult: 1, points: 13, nrr: "+1.245" },
-  { team: "Australia", shortName: "AUS", flag: "🇦🇺", matches: 8, won: 5, lost: 2, noResult: 1, points: 11, nrr: "+0.892" },
-  { team: "England", shortName: "ENG", flag: "🏴󠁧󠁢󠁥󠁮󠁧󠁿", matches: 8, won: 5, lost: 3, noResult: 0, points: 10, nrr: "+0.567" },
-  { team: "South Africa", shortName: "SA", flag: "🇿🇦", matches: 7, won: 4, lost: 3, noResult: 0, points: 8, nrr: "+0.234" },
-  { team: "New Zealand", shortName: "NZ", flag: "🇳🇿", matches: 7, won: 3, lost: 3, noResult: 1, points: 7, nrr: "+0.112" },
-  { team: "Pakistan", shortName: "PAK", flag: "🇵🇰", matches: 8, won: 3, lost: 4, noResult: 1, points: 7, nrr: "-0.045" },
-  { team: "Sri Lanka", shortName: "SL", flag: "🇱🇰", matches: 7, won: 2, lost: 5, noResult: 0, points: 4, nrr: "-0.678" },
-  { team: "Bangladesh", shortName: "BAN", flag: "🇧🇩", matches: 7, won: 1, lost: 6, noResult: 0, points: 2, nrr: "-1.234" },
-  { team: "West Indies", shortName: "WI", flag: "🏝️", matches: 7, won: 1, lost: 5, noResult: 1, points: 3, nrr: "-0.890" },
-  { team: "Afghanistan", shortName: "AFG", flag: "🇦🇫", matches: 7, won: 0, lost: 7, noResult: 0, points: 0, nrr: "-2.156" },
-];
-
 export default function PointTable() {
+  const [tableData, setTableData] = useState<PointTableEntry[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const [source, setSource] = useState('');
+
+  const fetchPointsTable = useCallback(async () => {
+    try {
+      const res = await fetch('/api/cricket/points-table');
+      const data = await res.json();
+      if (data.points && data.points.length > 0) {
+        setTableData(data.points);
+        setSource(data.source || 'unknown');
+      }
+    } catch (error) {
+      console.error('Failed to fetch points table:', error);
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchPointsTable();
+    // Refresh every 5 minutes
+    const interval = setInterval(fetchPointsTable, 300000);
+    return () => clearInterval(interval);
+  }, [fetchPointsTable]);
+
+  const handleRefresh = () => {
+    setRefreshing(true);
+    fetchPointsTable();
+  };
+
+  if (loading) {
+    return (
+      <div className="px-4 py-4">
+        <div className="flex items-center gap-2 mb-4">
+          <Trophy className="w-4 h-4 text-yellow-500" />
+          <h2 className="text-sm font-bold text-gray-800 dark:text-gray-200">IPL 2026 Points Table</h2>
+          <Loader2 className="w-4 h-4 text-green-500 animate-spin" />
+        </div>
+        <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 p-4 space-y-3">
+          {[...Array(5)].map((_, i) => (
+            <div key={i} className="h-8 bg-gray-100 dark:bg-gray-700 rounded animate-pulse" />
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  if (tableData.length === 0) {
+    return (
+      <div className="px-4 py-4">
+        <div className="flex items-center gap-2 mb-4">
+          <Trophy className="w-4 h-4 text-yellow-500" />
+          <h2 className="text-sm font-bold text-gray-800 dark:text-gray-200">IPL 2026 Points Table</h2>
+        </div>
+        <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 p-6 text-center">
+          <p className="text-xs text-gray-400">Points table not available</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="px-4 py-4">
       {/* Header */}
-      <div className="flex items-center gap-2 mb-4">
-        <Trophy className="w-4 h-4 text-yellow-500" />
-        <h2 className="text-sm font-bold text-gray-800 dark:text-gray-200">Points Table</h2>
+      <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center gap-2">
+          <Trophy className="w-4 h-4 text-yellow-500" />
+          <h2 className="text-sm font-bold text-gray-800 dark:text-gray-200">IPL 2026 Points Table</h2>
+          {source === 'cricapi' && (
+            <span className="text-[7px] font-bold text-green-400 bg-green-900/40 px-1.5 py-0.5 rounded-full">LIVE</span>
+          )}
+        </div>
+        <button onClick={handleRefresh} className="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full transition-colors">
+          <RefreshCw className={`w-3.5 h-3.5 text-gray-400 ${refreshing ? 'animate-spin' : ''}`} />
+        </button>
       </div>
 
       {/* Table */}
       <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden">
         {/* Table Header */}
-        <div className="grid grid-cols-[2fr_1fr_1fr_1fr_1fr_1fr_1fr] gap-1 px-3 py-2 bg-gray-50 dark:bg-gray-700/50 text-[9px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+        <div className="grid grid-cols-[28px_2fr_1fr_1fr_1fr_1fr_1fr_1fr] gap-1 px-3 py-2 bg-gradient-to-r from-[#0a1628] to-[#132244] text-[8px] font-bold text-white/80 uppercase tracking-wider">
+          <span className="text-center">#</span>
           <span>Team</span>
           <span className="text-center">M</span>
           <span className="text-center">W</span>
           <span className="text-center">L</span>
+          <span className="text-center">T</span>
           <span className="text-center">NR</span>
           <span className="text-center">Pts</span>
-          <span className="text-center">NRR</span>
         </div>
 
         {/* Table Body */}
-        {MOCK_POINTS_TABLE.map((entry, idx) => (
+        {tableData.map((entry, idx) => (
           <div
             key={entry.shortName}
-            className={`grid grid-cols-[2fr_1fr_1fr_1fr_1fr_1fr_1fr] gap-1 px-3 py-2.5 items-center ${
+            className={`grid grid-cols-[28px_2fr_1fr_1fr_1fr_1fr_1fr_1fr] gap-1 px-3 py-2.5 items-center transition-colors ${
               idx < 4
                 ? 'bg-green-50/50 dark:bg-green-900/10 border-l-2 border-green-500'
-                : idx === MOCK_POINTS_TABLE.length - 1
+                : idx === tableData.length - 1
                 ? 'bg-red-50/30 dark:bg-red-900/5 border-l-2 border-red-300'
                 : 'border-l-2 border-transparent'
-            } ${idx !== MOCK_POINTS_TABLE.length - 1 ? 'border-b border-gray-50 dark:border-gray-700/50' : ''}`}
+            } ${idx !== tableData.length - 1 ? 'border-b border-gray-50 dark:border-gray-700/50' : ''}`}
           >
+            <span className="text-[10px] text-center font-bold text-gray-400">{entry.rank}</span>
             <div className="flex items-center gap-1.5">
-              <span className="text-sm">{entry.flag}</span>
+              {entry.img ? (
+                <Image src={entry.img} alt={entry.shortName} width={20} height={20} className="object-contain" unoptimized />
+              ) : (
+                <span className="text-sm">🏏</span>
+              )}
               <span className="text-xs font-bold text-gray-800 dark:text-gray-200">{entry.shortName}</span>
             </div>
             <span className="text-xs text-center text-gray-600 dark:text-gray-400">{entry.matches}</span>
-            <span className="text-xs text-center font-medium text-gray-700 dark:text-gray-300">{entry.won}</span>
-            <span className="text-xs text-center text-gray-600 dark:text-gray-400">{entry.lost}</span>
+            <span className="text-xs text-center font-medium text-green-600 dark:text-green-400">{entry.won}</span>
+            <span className="text-xs text-center text-red-500 dark:text-red-400">{entry.lost}</span>
+            <span className="text-xs text-center text-gray-500 dark:text-gray-500">{entry.tied}</span>
             <span className="text-xs text-center text-gray-500 dark:text-gray-500">{entry.noResult}</span>
-            <span className="text-xs text-center font-bold text-gray-900 dark:text-gray-100">{entry.points}</span>
-            <span className={`text-[10px] text-center font-medium ${entry.nrr.startsWith('+') ? 'text-green-600' : 'text-red-500'}`}>
-              {entry.nrr}
-            </span>
+            <span className="text-xs text-center font-black text-gray-900 dark:text-gray-100 bg-green-50 dark:bg-green-900/20 rounded px-1">{entry.points}</span>
           </div>
         ))}
       </div>

@@ -15,7 +15,10 @@ const TEAM_FLAGS: Record<string, string> = {
   "Lucknow Super Giants": "💚", "Rajasthan Royals": "💗", "Sunrisers Hyderabad": "🟧",
   "Multan Sultans": "🟢", "Hyderabad Kingsmen": "🔵", "Peshawar Zalmi": "🟡",
   "Islamabad United": "🔴", "Karachi Kings": "🔵", "Quetta Gladiators": "🟣",
-  "Lahore Qalandars": "🟢", "Rawalpindiz": "🔴",
+  "Lahore Qalandars": "🟢", "Rawalpindiz": "🔴", "United States of America": "🇺🇸",
+  "Italy": "🇮🇹", "Vanuatu": "🇻🇺", "Rwanda": "🇷🇼", "Costa Rica": "🇨🇷",
+  "Chile": "🇨🇱", "Guernsey": "🇬🇬", "Isle Of Man": "🏝️",
+  "Greece": "🇬🇷", "Denmark": "🇩🇰",
 };
 
 interface MatchData {
@@ -41,6 +44,7 @@ interface MatchData {
   tossWinner?: string;
   tossChoice?: string;
   date: string;
+  seriesId?: string;
 }
 
 // Cache for match data (30 second TTL)
@@ -71,6 +75,10 @@ function parseScore(scoreArr: Array<{ inning: string; r: number; w: number; o: n
       } else if (!team2Score) {
         team2Score = scoreStr;
       }
+    }
+    // If only one score, the team with that score is batting
+    if (team1Score && !team2Score) {
+      battingTeam = "team2"; // team2 hasn't batted yet
     }
   }
 
@@ -110,7 +118,7 @@ async function fetchMatchesFromCricAPI(): Promise<MatchData[]> {
         const team1Info = teamInfo[0] || { name: (m.teams as string[])?.[0] || "Team 1" };
         const team2Info = teamInfo[1] || { name: (m.teams as string[])?.[1] || "Team 2" };
 
-        const { team1Score, team2Score, battingTeam } = parseScore(
+        const { team1Score, team2Score } = parseScore(
           (m.score || []) as Array<{ inning: string; r: number; w: number; o: number }>
         );
 
@@ -119,29 +127,14 @@ async function fetchMatchesFromCricAPI(): Promise<MatchData[]> {
         const matchEnded = !!m.matchEnded;
         const isLive = matchStarted && !matchEnded;
 
-        // If scores are empty but match is live, try to extract from match_info
-        // CricAPI sometimes doesn't return scores for live matches in the list endpoint
-        let finalTeam1Score = team1Score;
-        let finalTeam2Score = team2Score;
-
-        // For live matches without scores, we'll do a quick fetch of match details
-        // But only if score array was empty
-        const scoreArr = (m.score || []) as Array<unknown>;
-
-        // For live matches, fetch individual match_info to get scores
-        // CricAPI doesn't always include scores in the list endpoint for live matches
-        if (isLive && scoreArr.length === 0 && m.id) {
-          // We'll fetch this asynchronously later - for now mark as needing fetch
-        }
-
         return {
           id: m.id as string,
           team1: team1Info.name,
           team2: team2Info.name,
           team1Short: getShortName(team1Info),
           team2Short: getShortName(team2Info),
-          team1Score: finalTeam1Score,
-          team2Score: finalTeam2Score,
+          team1Score,
+          team2Score,
           status,
           matchType: m.name as string,
           venue: (m.venue as string) || "",
@@ -151,12 +144,13 @@ async function fetchMatchesFromCricAPI(): Promise<MatchData[]> {
           team1Img: team1Info.img,
           team2Img: team2Info.img,
           currentOver: isLive ? "• • • • • •" : undefined,
-          battingTeam,
+          battingTeam: "",
           matchStarted,
           matchEnded,
           tossWinner: m.tossWinner as string,
           tossChoice: m.tossChoice as string,
           date: (m.date as string) || "",
+          seriesId: m.series_id as string,
         } as MatchData;
       })
       // Sort: Live first, then by priority, then by date
@@ -186,6 +180,8 @@ async function fetchMatchesFromCricAPI(): Promise<MatchData[]> {
               const { team1Score, team2Score } = parseScore(infoData.data.score);
               if (team1Score) match.team1Score = team1Score;
               if (team2Score) match.team2Score = team2Score;
+              // Update status from match_info (more detailed)
+              if (infoData.data.status) match.status = infoData.data.status;
             }
           }
         } catch (e) {
@@ -195,40 +191,27 @@ async function fetchMatchesFromCricAPI(): Promise<MatchData[]> {
       await Promise.all(scorePromises);
     }
 
-    // Still no scores for live matches? Try CricBuzz web scraping as final fallback
-    const stillNoScores = matches.filter(m => m.isLive && !m.team1Score && !m.team2Score);
-    if (stillNoScores.length > 0) {
-      try {
-        const ZAI = (await import('z-ai-web-dev-sdk')).default;
-        const zai = await ZAI.create();
-        const pageData = await zai.functions.invoke('page_reader', {
-          url: 'https://www.cricbuzz.com/cricket-match/live-scores',
-        });
-        if (pageData?.data?.html) {
-          const textContent = pageData.data.html.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ');
-          // Extract scores from CricBuzz text
-          const scorePatterns = [
-            /([A-Z]{2,4})\s+(\d+[-/]\d+)\s*\((\d+\.?\d*)\)/gi,
-          ];
-          const webScores: Record<string, string> = {};
-          for (const pattern of scorePatterns) {
-            let scoreMatch;
-            while ((scoreMatch = pattern.exec(textContent)) !== null) {
-              const teamShort = scoreMatch[1];
-              const runs = scoreMatch[2].replace('-', '/');
-              const overs = scoreMatch[3];
-              webScores[teamShort] = `${runs} (${overs})`;
+    // Also fetch match_info for completed matches without scores (up to 3)
+    const completedWithoutScores = matches.filter(m => m.matchEnded && !m.team1Score && !m.team2Score);
+    if (completedWithoutScores.length > 0 && completedWithoutScores.length <= 3) {
+      const scorePromises = completedWithoutScores.map(async (match) => {
+        try {
+          const infoRes = await fetch(`${CRICAPI_BASE}/match_info?apikey=${CRICAPI_KEY}&id=${match.id}`, {
+            next: { revalidate: 30 },
+          });
+          if (infoRes.ok) {
+            const infoData = await infoRes.json();
+            if (infoData.status === "success" && infoData.data?.score?.length > 0) {
+              const { team1Score, team2Score } = parseScore(infoData.data.score);
+              if (team1Score) match.team1Score = team1Score;
+              if (team2Score) match.team2Score = team2Score;
             }
           }
-          // Apply to matches without scores
-          for (const match of stillNoScores) {
-            if (webScores[match.team1Short]) match.team1Score = webScores[match.team1Short];
-            if (webScores[match.team2Short]) match.team2Score = webScores[match.team2Short];
-          }
+        } catch (e) {
+          // Silently ignore
         }
-      } catch (e) {
-        // Silently ignore
-      }
+      });
+      await Promise.all(scorePromises);
     }
 
     return matches;
@@ -237,16 +220,6 @@ async function fetchMatchesFromCricAPI(): Promise<MatchData[]> {
     return [];
   }
 }
-
-// Fallback mock data
-const MOCK_MATCHES: MatchData[] = [
-  {
-    id: "mock_1", team1: "Mumbai Indians", team2: "Sunrisers Hyderabad", team1Short: "MI", team2Short: "SRH",
-    team1Score: "233/5 (20)", team2Score: "110/4 (12)", status: "SRH need 124 runs", matchType: "41st Match, IPL 2026",
-    venue: "Wankhede Stadium, Mumbai", isLive: true, team1Flag: "🔵", team2Flag: "🟧",
-    currentOver: "• • • • • •", battingTeam: "SRH", matchStarted: true, matchEnded: false, date: "2026-04-29",
-  },
-];
 
 export async function GET() {
   try {
@@ -265,10 +238,14 @@ export async function GET() {
       return NextResponse.json({ matches: realMatches, source: "cricapi" });
     }
 
-    // Fallback to mock
-    return NextResponse.json({ matches: MOCK_MATCHES, source: "mock" });
+    // Fallback to cached data even if expired
+    if (cachedMatches.length > 0) {
+      return NextResponse.json({ matches: cachedMatches, source: "cache-expired" });
+    }
+
+    return NextResponse.json({ matches: [], source: "empty" });
   } catch (error) {
     console.error("Matches API error:", error);
-    return NextResponse.json({ matches: cachedMatches.length > 0 ? cachedMatches : MOCK_MATCHES, source: "fallback" });
+    return NextResponse.json({ matches: cachedMatches.length > 0 ? cachedMatches : [], source: "error" });
   }
 }

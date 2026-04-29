@@ -7,6 +7,20 @@ const nextConfig: NextConfig = {
     ignoreBuildErrors: true,
   },
   reactStrictMode: false,
+  images: {
+    remotePatterns: [
+      {
+        protocol: 'https',
+        hostname: 'g.cricapi.com',
+        pathname: '/iapi/**',
+      },
+      {
+        protocol: 'https',
+        hostname: 'h.cricapi.com',
+        pathname: '/img/**',
+      },
+    ],
+  },
 };
 
 export default nextConfig;

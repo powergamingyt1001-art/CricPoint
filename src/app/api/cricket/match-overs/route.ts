@@ -1,55 +1,53 @@
 import { NextResponse } from "next/server";
-import ZAI from "z-ai-web-dev-sdk";
+
+const CRICAPI_KEY = "a79518cb-8dbe-4d52-aacc-d51ff871a87d";
+const CRICAPI_BASE = "https://api.cricapi.com/v1";
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const matchId = searchParams.get("matchid");
-  const team1 = searchParams.get("team1") || "";
-  const team2 = searchParams.get("team2") || "";
 
   if (!matchId) {
     return NextResponse.json({ error: "matchid is required" }, { status: 400 });
   }
 
   try {
-    const zai = await ZAI.create();
-    const searchQuery = `${team1} vs ${team2} over summary cricket`.trim();
-    const searchResults = await zai.functions.invoke('web_search', {
-      query: searchQuery || 'cricket overs summary today',
-      num: 5,
+    // Use CricAPI match_info to construct over summary from score data
+    const response = await fetch(`${CRICAPI_BASE}/match_info?apikey=${CRICAPI_KEY}&id=${matchId}`, {
+      next: { revalidate: 30 },
     });
 
-    const matchUrl = searchResults?.find((r: { host_name: string }) =>
-      r.host_name.includes('cricbuzz') || r.host_name.includes('espncricinfo')
-    )?.url;
+    if (response.ok) {
+      const data = await response.json();
+      if (data.status === "success" && data.data) {
+        const m = data.data;
+        const scoreArr = m.score || [];
+        const teamInfo = m.teamInfo || [];
 
-    if (matchUrl) {
-      const pageData = await zai.functions.invoke('page_reader', { url: matchUrl });
-      if (pageData?.data?.html) {
-        const text = pageData.data.html.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ');
-        const llmResponse = await zai.chat.completions.create({
-          messages: [
-            {
-              role: 'system',
-              content: `Extract over-by-over cricket summary. Return JSON: {"overs":[{"overNum":1,"runs":8,"wickets":0,"balls":["1","0","4","0","2","1"],"summary":"..."}]}. Return ONLY valid JSON with up to 10 recent overs.`
-            },
-            { role: 'user', content: `Extract overs data from:\n\n${text.substring(0, 3000)}` }
-          ],
-          thinking: { type: 'disabled' },
+        // Build over summaries from available score data
+        const overs: Array<{ overNum: number; runs: number; wickets: number; summary: string }> = [];
+
+        scoreArr.forEach((s: { inning: string; r: number; w: number; o: number }, i: number) => {
+          const tInfo = teamInfo[i] || {};
+          const teamName = tInfo.shortname || tInfo.name || `Team ${i + 1}`;
+          overs.push({
+            overNum: Math.ceil(s.o || 0),
+            runs: s.r || 0,
+            wickets: s.w || 0,
+            summary: `${teamName} inning: ${s.r}/${s.w} in ${s.o} overs`,
+          });
         });
-        const content = llmResponse.choices?.[0]?.message?.content || '{}';
-        const jsonMatch = content.match(/\{[\s\S]*\}/);
-        if (jsonMatch) {
-          const overs = JSON.parse(jsonMatch[0]);
-          overs.matchId = matchId;
-          overs.source = "ai";
-          return NextResponse.json(overs);
-        }
+
+        return NextResponse.json({
+          matchId,
+          overs,
+          source: "cricapi",
+        });
       }
     }
   } catch (error) {
     console.error("Overs API error:", error);
   }
 
-  return NextResponse.json({ matchId, overs: [], source: "mock" });
+  return NextResponse.json({ matchId, overs: [], source: "unavailable" });
 }

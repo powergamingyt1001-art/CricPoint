@@ -1,55 +1,75 @@
 import { NextResponse } from "next/server";
-import ZAI from "z-ai-web-dev-sdk";
+
+const CRICAPI_KEY = "a79518cb-8dbe-4d52-aacc-d51ff871a87d";
+const CRICAPI_BASE = "https://api.cricapi.com/v1";
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const matchId = searchParams.get("matchid");
-  const team1 = searchParams.get("team1") || "";
-  const team2 = searchParams.get("team2") || "";
 
   if (!matchId) {
     return NextResponse.json({ error: "matchid is required" }, { status: 400 });
   }
 
   try {
-    const zai = await ZAI.create();
-    const searchQuery = `${team1} vs ${team2} ball by ball commentary cricket live`.trim();
-    const searchResults = await zai.functions.invoke('web_search', {
-      query: searchQuery || 'cricket commentary today live',
-      num: 5,
+    // Use CricAPI match_info to construct commentary from status
+    const response = await fetch(`${CRICAPI_BASE}/match_info?apikey=${CRICAPI_KEY}&id=${matchId}`, {
+      next: { revalidate: 30 },
     });
 
-    const matchUrl = searchResults?.find((r: { host_name: string }) =>
-      r.host_name.includes('cricbuzz') || r.host_name.includes('espncricinfo')
-    )?.url;
+    if (response.ok) {
+      const data = await response.json();
+      if (data.status === "success" && data.data) {
+        const m = data.data;
+        const status = m.status || "";
+        const scoreArr = m.score || [];
+        const teamInfo = m.teamInfo || [];
 
-    if (matchUrl) {
-      const pageData = await zai.functions.invoke('page_reader', { url: matchUrl });
-      if (pageData?.data?.html) {
-        const text = pageData.data.html.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ');
-        const llmResponse = await zai.chat.completions.create({
-          messages: [
-            {
-              role: 'system',
-              content: `Extract recent ball-by-ball cricket commentary. Return JSON: {"commentary":[{"over":"0.1","text":"...","runs":0,"type":"normal/wicket/boundary/six"}]}. Return ONLY valid JSON with up to 20 recent balls.`
-            },
-            { role: 'user', content: `Extract commentary from:\n\n${text.substring(0, 3000)}` }
-          ],
-          thinking: { type: 'disabled' },
-        });
-        const content = llmResponse.choices?.[0]?.message?.content || '{}';
-        const jsonMatch = content.match(/\{[\s\S]*\}/);
-        if (jsonMatch) {
-          const commentary = JSON.parse(jsonMatch[0]);
-          commentary.matchId = matchId;
-          commentary.source = "ai";
-          return NextResponse.json(commentary);
+        // Build commentary entries from available data
+        const commentary: Array<{ over: string; text: string; runs: number; type: string }> = [];
+
+        // Add match status as main commentary
+        if (status) {
+          commentary.push({
+            over: "",
+            text: status,
+            runs: 0,
+            type: "status",
+          });
         }
+
+        // Add score summary for each inning
+        scoreArr.forEach((s: { inning: string; r: number; w: number; o: number }, i: number) => {
+          const tInfo = teamInfo[i] || {};
+          const teamName = tInfo.shortname || tInfo.name || `Team ${i + 1}`;
+          commentary.push({
+            over: String(s.o || 0),
+            text: `${teamName}: ${s.r}/${s.w} (${s.o} overs)`,
+            runs: s.r || 0,
+            type: "score",
+          });
+        });
+
+        // Add toss info
+        if (m.tossWinner && m.tossChoice) {
+          commentary.unshift({
+            over: "0.0",
+            text: `${m.tossWinner} won the toss and elected to ${m.tossChoice}`,
+            runs: 0,
+            type: "info",
+          });
+        }
+
+        return NextResponse.json({
+          matchId,
+          commentary,
+          source: "cricapi",
+        });
       }
     }
   } catch (error) {
     console.error("Commentary API error:", error);
   }
 
-  return NextResponse.json({ matchId, commentary: [], source: "mock" });
+  return NextResponse.json({ matchId, commentary: [], source: "unavailable" });
 }

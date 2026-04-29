@@ -1,28 +1,20 @@
 'use client';
 
 import { motion } from 'framer-motion';
-
-interface OverBall {
-  run: number;
-  type: string;
-}
+import { Trophy, Swords } from 'lucide-react';
 
 interface OverData {
-  over: number;
-  balls: OverBall[];
+  overNum?: number;
+  over?: number;
+  runs: number;
+  wickets?: number;
+  summary?: string;
+  balls?: Array<{ run: number; type: string }>;
 }
 
 interface OverSectionProps {
   overs: { overs: OverData[] } | null;
   loading: boolean;
-}
-
-function getBallStyle(type: string, run: number) {
-  if (type === 'wicket') return 'bg-red-500 text-white';
-  if (type === 'six' || run === 6) return 'bg-green-500 text-white';
-  if (type === 'four' || run === 4) return 'bg-yellow-400 text-yellow-900';
-  if (run === 0) return 'bg-gray-200 dark:bg-gray-600 text-gray-600 dark:text-gray-300';
-  return 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300';
 }
 
 export default function OverSection({ overs, loading }: OverSectionProps) {
@@ -36,81 +28,101 @@ export default function OverSection({ overs, loading }: OverSectionProps) {
     );
   }
 
-  if (!overs || !overs.overs) {
+  if (!overs || !overs.overs || overs.overs.length === 0) {
     return (
       <div className="p-4 text-center text-gray-400">
         <p>Over data not available</p>
+        <p className="text-[10px] mt-1">Detailed over-by-over data requires premium API access</p>
       </div>
     );
   }
 
   return (
     <div className="p-4 space-y-2">
-      {/* Legend */}
-      <div className="flex items-center gap-3 mb-3 text-[9px] text-gray-400">
-        <div className="flex items-center gap-1">
-          <div className="w-3 h-3 rounded-full bg-gray-200 dark:bg-gray-600" />
-          <span>0</span>
-        </div>
-        <div className="flex items-center gap-1">
-          <div className="w-3 h-3 rounded-full bg-yellow-400" />
-          <span>4</span>
-        </div>
-        <div className="flex items-center gap-1">
-          <div className="w-3 h-3 rounded-full bg-green-500" />
-          <span>6</span>
-        </div>
-        <div className="flex items-center gap-1">
-          <div className="w-3 h-3 rounded-full bg-red-500" />
-          <span>W</span>
-        </div>
-      </div>
-
       {overs.overs.map((overData, idx) => {
-        const totalRuns = overData.balls.reduce((sum, b) => sum + b.run, 0);
-        const hasWicket = overData.balls.some(b => b.type === 'wicket');
-        const hasBoundary = overData.balls.some(b => b.type === 'four' || b.type === 'six' || b.run === 4 || b.run === 6);
+        const overNum = overData.overNum || overData.over || idx + 1;
+        const hasBalls = overData.balls && overData.balls.length > 0;
 
         return (
           <motion.div
-            key={overData.over}
-            className="bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700 p-3"
+            key={idx}
+            className="bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700 p-3 overflow-hidden"
             initial={{ opacity: 0, y: 5 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: idx * 0.03, duration: 0.2 }}
+            transition={{ delay: idx * 0.05, duration: 0.2 }}
           >
             <div className="flex items-center gap-3">
-              {/* Over number */}
-              <div className="flex-shrink-0 w-10 text-center">
-                <span className="text-[10px] text-gray-400">Over</span>
-                <p className="text-sm font-bold text-gray-800 dark:text-gray-200">{overData.over}</p>
+              {/* Inning/Over indicator */}
+              <div className="flex-shrink-0 w-12 text-center">
+                <div className={`w-8 h-8 rounded-full mx-auto flex items-center justify-center ${
+                  (overData.wickets || 0) > 0
+                    ? 'bg-red-100 dark:bg-red-900/20'
+                    : 'bg-green-100 dark:bg-green-900/20'
+                }`}>
+                  {(overData.wickets || 0) > 0 ? (
+                    <Swords className="w-4 h-4 text-red-500" />
+                  ) : (
+                    <Trophy className="w-4 h-4 text-green-500" />
+                  )}
+                </div>
               </div>
 
-              {/* Balls */}
-              <div className="flex-1 flex items-center gap-1.5 overflow-x-auto scrollbar-hide">
-                {overData.balls.map((ball, i) => (
-                  <span
-                    key={i}
-                    className={`w-7 h-7 rounded-full flex items-center justify-center text-[10px] font-bold flex-shrink-0 ${getBallStyle(ball.type, ball.run)}`}
-                  >
-                    {ball.type === 'wicket' ? 'W' : ball.run}
-                  </span>
-                ))}
+              {/* Summary */}
+              <div className="flex-1 min-w-0">
+                {overData.summary ? (
+                  <p className="text-xs font-medium text-gray-700 dark:text-gray-300">
+                    {overData.summary}
+                  </p>
+                ) : hasBalls ? (
+                  <div className="flex items-center gap-1.5 overflow-x-auto scrollbar-hide">
+                    {overData.balls!.map((ball, i) => {
+                      const style = ball.type === 'wicket'
+                        ? 'bg-red-500 text-white'
+                        : ball.run === 6 || ball.type === 'six'
+                        ? 'bg-green-500 text-white'
+                        : ball.run === 4 || ball.type === 'four'
+                        ? 'bg-yellow-400 text-yellow-900'
+                        : ball.run === 0
+                        ? 'bg-gray-200 dark:bg-gray-600 text-gray-600 dark:text-gray-300'
+                        : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300';
+
+                      return (
+                        <span
+                          key={i}
+                          className={`w-7 h-7 rounded-full flex items-center justify-center text-[10px] font-bold flex-shrink-0 ${style}`}
+                        >
+                          {ball.type === 'wicket' ? 'W' : ball.run}
+                        </span>
+                      );
+                    })}
+                  </div>
+                ) : (
+                  <p className="text-xs text-gray-500">
+                    {overData.runs}/{overData.wickets || 0}
+                  </p>
+                )}
               </div>
 
-              {/* Runs in over */}
+              {/* Score */}
               <div className="flex-shrink-0 text-right">
                 <p className={`text-sm font-bold ${
-                  hasWicket ? 'text-red-500' : hasBoundary ? 'text-green-600' : 'text-gray-700 dark:text-gray-300'
+                  (overData.wickets || 0) > 0 ? 'text-red-500' : 'text-green-600 dark:text-green-400'
                 }`}>
-                  {totalRuns}
+                  {overData.runs}
                 </p>
-                <p className="text-[9px] text-gray-400">runs</p>
+                {(overData.wickets || 0) > 0 && (
+                  <p className="text-[9px] text-red-400">{overData.wickets} wkt</p>
+                )}
               </div>
             </div>
           </motion.div>
         );
       })}
+
+      {/* Info note */}
+      <div className="mt-4 p-3 bg-gray-50 dark:bg-gray-800 rounded-xl text-center">
+        <p className="text-[10px] text-gray-400">📡 Match scores update automatically every 30 seconds</p>
+      </div>
     </div>
   );
 }
