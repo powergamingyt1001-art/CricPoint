@@ -5,9 +5,9 @@ import { MapPin, X, Radio } from 'lucide-react';
 import { useCricPointStore, type MatchBasic } from '@/store/cricpoint-store';
 
 export default function PinSection({ matches }: { matches: MatchBasic[] }) {
-  const { matchPinned, togglePin, selectMatch } = useCricPointStore();
-  const liveMatches = matches.filter(m => m.isLive);
-  const displayMatch = liveMatches[0];
+  const { matchPinned, togglePin, selectMatch, pinnedMatchId } = useCricPointStore();
+  const pinnedMatch = pinnedMatchId ? matches.find(m => m.id === pinnedMatchId) : null;
+  const displayMatch = pinnedMatch || matches.filter(m => m.isLive)[0];
 
   if (!displayMatch) return null;
 
@@ -63,7 +63,7 @@ export default function PinSection({ matches }: { matches: MatchBasic[] }) {
                   </span>
                 )}
                 <button
-                  onClick={(e) => { e.stopPropagation(); togglePin(); }}
+                  onClick={(e) => { e.stopPropagation(); togglePin(displayMatch.id); }}
                   className="p-0.5 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-full transition-colors"
                 >
                   <X className="w-3 h-3 text-gray-400" />

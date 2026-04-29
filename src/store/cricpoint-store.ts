@@ -4,6 +4,7 @@ export type AppView = "splash" | "dashboard" | "match-detail";
 export type BottomTab = "home" | "match" | "ai" | "poll" | "more";
 export type MatchTab = "info" | "scorecard" | "overs" | "commentary";
 export type MatchFilter = "upcoming" | "complete";
+export type MenuDialog = "icc-ranking" | "ranking" | "settings" | "about" | null;
 
 interface CricPointState {
   currentView: AppView;
@@ -11,15 +12,20 @@ interface CricPointState {
   selectedMatchId: string | null;
   selectedMatchData: MatchBasic | null;
   matchPinned: boolean;
+  pinnedMatchId: string | null;
   matchFilter: MatchFilter;
+  showPointTable: boolean;
+  menuDialog: MenuDialog;
 
   setView: (view: AppView) => void;
   setActiveTab: (tab: BottomTab) => void;
   selectMatch: (matchId: string, matchData: MatchBasic) => void;
   goBack: () => void;
-  togglePin: () => void;
+  togglePin: (matchId?: string) => void;
   setPin: (val: boolean) => void;
   setMatchFilter: (filter: MatchFilter) => void;
+  setShowPointTable: (show: boolean) => void;
+  setMenuDialog: (dialog: MenuDialog) => void;
 }
 
 export interface MatchBasic {
@@ -46,14 +52,22 @@ export const useCricPointStore = create<CricPointState>((set) => ({
   selectedMatchId: null,
   selectedMatchData: null,
   matchPinned: false,
+  pinnedMatchId: null,
   matchFilter: "upcoming",
+  showPointTable: false,
+  menuDialog: null,
 
   setView: (view) => set({ currentView: view }),
   setActiveTab: (tab) => set({ activeTab: tab }),
   selectMatch: (matchId, matchData) =>
     set({ selectedMatchId: matchId, selectedMatchData: matchData, currentView: "match-detail" }),
   goBack: () => set({ currentView: "dashboard", selectedMatchId: null, selectedMatchData: null }),
-  togglePin: () => set((s) => ({ matchPinned: !s.matchPinned })),
-  setPin: (val) => set({ matchPinned: val }),
+  togglePin: (matchId) => set((s) => ({
+    matchPinned: !s.matchPinned,
+    pinnedMatchId: !s.matchPinned ? (matchId || s.pinnedMatchId) : null,
+  })),
+  setPin: (val) => set({ matchPinned: val, pinnedMatchId: val ? null : null }),
   setMatchFilter: (filter) => set({ matchFilter: filter }),
+  setShowPointTable: (show) => set({ showPointTable: show }),
+  setMenuDialog: (dialog) => set({ menuDialog: dialog }),
 }));

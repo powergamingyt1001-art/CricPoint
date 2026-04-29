@@ -142,3 +142,38 @@ Stage Summary:
 - Banner ad: Added between completed matches and posts arrow
 - Intro logo: Much bigger (w-56 h-56) with glow effect
 - Pin section: Adjusted for new header height
+
+---
+Task ID: 5
+Agent: Main Agent
+Task: Fix multiple issues: Poll voting, logo spacing, 3-dot menu, pull-to-refresh, ads frequency
+
+Work Log:
+- Fixed polls voting: Changed from disabled={!!voted} to separate votedPolls state tracking, added animation (motion.div) for percentage bars and vote counts
+- Fixed logo & CricPoint name spacing: Changed gap from gap-3 to gap-1 so logo and text are touching
+- Made 3-dot menu options fully functional:
+  - ICC Ranking → Shows team rankings for Tests/ODI/T20 with tabs
+  - Player Ranking → Shows batting/bowling/allrounder player rankings
+  - Settings → Toggle switches for notifications, dark mode, match alerts, auto-refresh + privacy section
+  - About → App info with logo, version, feature cards, copyright
+- Added bottom sheet dialog system using framer-motion (slides up from bottom)
+- Updated Zustand store: added menuDialog state (MenuDialog type), setMenuDialog action, pinnedMatchId
+- Added pull-to-refresh: Touch event handlers on scroll container, pull down at top triggers refresh
+- Added rate limiting: 5 refreshes = 20 second cooldown
+- Reduced ads: 1 ad after every 2 posts only (not every post or every 3)
+- Header style: Premium dark navy gradient (#0a1628 → #132244) with green-400 "Point" text
+- Updated PinSection: Uses pinnedMatchId to find correct pinned match
+- Updated BottomNav: Menu options now open real functional dialogs
+- All lint checks pass, dev server running
+
+Stage Summary:
+- Polls voting now works with animation feedback
+- Logo and "CricPoint" text are touching (gap-1)
+- 3-dot menu opens real functional bottom sheet dialogs
+- ICC Ranking: Tests/ODI/T20 team rankings with tabs
+- Player Ranking: Batting/Bowling/Allrounder with tabs
+- Settings: Toggle switches for 4 settings + privacy options
+- About: App info with features list
+- Pull-to-refresh works (touch-based)
+- Ads: 1 ad after every 2 posts only
+- Rate limiting: 5 refreshes = 20s cooldown

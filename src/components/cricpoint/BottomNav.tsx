@@ -1,7 +1,7 @@
 'use client';
 
 import { Home, Swords, Bot, BarChart3, MoreVertical } from 'lucide-react';
-import { useCricPointStore, type BottomTab } from '@/store/cricpoint-store';
+import { useCricPointStore, type BottomTab, type MenuDialog } from '@/store/cricpoint-store';
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -12,9 +12,24 @@ const tabs: { id: BottomTab; label: string; icon: React.ReactNode }[] = [
   { id: 'poll', label: 'Poll', icon: <BarChart3 className="w-5 h-5" /> },
 ];
 
+const menuOptions: { id: MenuDialog; icon: string; label: string }[] = [
+  { id: 'icc-ranking', icon: '🏆', label: 'ICC Ranking' },
+  { id: 'ranking', icon: '📊', label: 'Player Ranking' },
+  { id: 'settings', icon: '⚙️', label: 'Settings' },
+  { id: 'about', icon: 'ℹ️', label: 'About' },
+];
+
 export default function BottomNav() {
-  const { activeTab, setActiveTab } = useCricPointStore();
+  const { activeTab, setActiveTab, setMenuDialog } = useCricPointStore();
   const [showMenu, setShowMenu] = useState(false);
+
+  const handleMenuClick = (dialogId: MenuDialog) => {
+    setShowMenu(false);
+    // Small delay so menu closes first, then dialog opens
+    setTimeout(() => {
+      setMenuDialog(dialogId);
+    }, 150);
+  };
 
   return (
     <>
@@ -67,31 +82,28 @@ export default function BottomNav() {
               onClick={() => setShowMenu(false)}
             />
             <motion.div
-              className="fixed bottom-16 right-3 z-50 bg-white dark:bg-gray-800 rounded-2xl shadow-2xl border border-gray-100 dark:border-gray-700 overflow-hidden min-w-[180px]"
+              className="fixed bottom-16 right-3 z-50 bg-white dark:bg-gray-800 rounded-2xl shadow-2xl border border-gray-100 dark:border-gray-700 overflow-hidden min-w-[200px]"
               initial={{ opacity: 0, y: 20, scale: 0.9 }}
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, y: 20, scale: 0.9 }}
               transition={{ duration: 0.2 }}
             >
               <div className="py-1.5">
-                <MenuOption icon="🏆" label="ICC Ranking" onClick={() => setShowMenu(false)} />
-                <MenuOption icon="📊" label="Ranking" onClick={() => setShowMenu(false)} />
-                <MenuOption icon="⚙️" label="Settings" onClick={() => setShowMenu(false)} />
-                <MenuOption icon="ℹ️" label="Info" onClick={() => setShowMenu(false)} />
+                {menuOptions.map((option) => (
+                  <button
+                    key={option.id}
+                    onClick={() => handleMenuClick(option.id)}
+                    className="w-full flex items-center gap-3 px-4 py-3 hover:bg-green-50 dark:hover:bg-green-900/20 transition-colors text-left active:bg-green-100 dark:active:bg-green-900/30"
+                  >
+                    <span className="text-base">{option.icon}</span>
+                    <span className="text-xs font-medium text-gray-700 dark:text-gray-300">{option.label}</span>
+                  </button>
+                ))}
               </div>
             </motion.div>
           </>
         )}
       </AnimatePresence>
     </>
-  );
-}
-
-function MenuOption({ icon, label, onClick }: { icon: string; label: string; onClick: () => void }) {
-  return (
-    <button onClick={onClick} className="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors text-left">
-      <span className="text-sm">{icon}</span>
-      <span className="text-xs font-medium text-gray-700 dark:text-gray-300">{label}</span>
-    </button>
   );
 }
