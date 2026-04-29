@@ -13,7 +13,7 @@ export async function GET(request: Request) {
 
   try {
     const zai = await ZAI.create();
-    const searchQuery = `${team1} vs ${team2} over by over cricket`.trim();
+    const searchQuery = `${team1} vs ${team2} over summary cricket`.trim();
     const searchResults = await zai.functions.invoke('web_search', {
       query: searchQuery || 'cricket overs summary today',
       num: 5,
@@ -42,7 +42,7 @@ export async function GET(request: Request) {
         if (jsonMatch) {
           const overs = JSON.parse(jsonMatch[0]);
           overs.matchId = matchId;
-          overs.source = "live";
+          overs.source = "ai";
           return NextResponse.json(overs);
         }
       }

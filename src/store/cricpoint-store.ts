@@ -42,8 +42,15 @@ export interface MatchBasic {
   isLive: boolean;
   team1Flag: string;
   team2Flag: string;
+  team1Img?: string;
+  team2Img?: string;
   currentOver?: string;
   battingTeam?: string;
+  matchStarted?: boolean;
+  matchEnded?: boolean;
+  tossWinner?: string;
+  tossChoice?: string;
+  date?: string;
 }
 
 export const useCricPointStore = create<CricPointState>((set) => ({

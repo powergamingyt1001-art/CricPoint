@@ -13,9 +13,9 @@ export async function GET(request: Request) {
 
   try {
     const zai = await ZAI.create();
-    const searchQuery = `${team1} vs ${team2} ball by ball commentary cricket`.trim();
+    const searchQuery = `${team1} vs ${team2} ball by ball commentary cricket live`.trim();
     const searchResults = await zai.functions.invoke('web_search', {
-      query: searchQuery || 'cricket commentary today',
+      query: searchQuery || 'cricket commentary today live',
       num: 5,
     });
 
@@ -42,7 +42,7 @@ export async function GET(request: Request) {
         if (jsonMatch) {
           const commentary = JSON.parse(jsonMatch[0]);
           commentary.matchId = matchId;
-          commentary.source = "live";
+          commentary.source = "ai";
           return NextResponse.json(commentary);
         }
       }

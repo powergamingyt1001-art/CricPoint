@@ -83,7 +83,11 @@ export default function MatchSlider({ matches, onSelectMatch }: { matches: Match
                   {/* Team 1 */}
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2.5">
-                      <span className="text-2xl">{match.team1Flag}</span>
+                      {match.team1Img ? (
+                        <img src={match.team1Img} alt={match.team1Short} className="w-8 h-8 object-contain" />
+                      ) : (
+                        <span className="text-2xl">{match.team1Flag}</span>
+                      )}
                       <div className="flex items-center gap-1.5">
                         <span className="text-sm font-bold text-gray-800 dark:text-gray-200">{match.team1Short}</span>
                         {match.battingTeam === match.team1Short && match.isLive && (
@@ -108,7 +112,11 @@ export default function MatchSlider({ matches, onSelectMatch }: { matches: Match
                   {/* Team 2 */}
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2.5">
-                      <span className="text-2xl">{match.team2Flag}</span>
+                      {match.team2Img ? (
+                        <img src={match.team2Img} alt={match.team2Short} className="w-8 h-8 object-contain" />
+                      ) : (
+                        <span className="text-2xl">{match.team2Flag}</span>
+                      )}
                       <div className="flex items-center gap-1.5">
                         <span className="text-sm font-bold text-gray-700 dark:text-gray-300">{match.team2Short}</span>
                         {match.battingTeam === match.team2Short && match.isLive && (

@@ -1,6 +1,9 @@
 import { NextResponse } from "next/server";
 import ZAI from "z-ai-web-dev-sdk";
 
+const CRICAPI_KEY = "a79518cb-8dbe-4d52-aacc-d51ff871a87d";
+const CRICAPI_BASE = "https://api.cricapi.com/v1";
+
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const matchId = searchParams.get("matchid");
@@ -11,6 +14,45 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: "matchid is required" }, { status: 400 });
   }
 
+  try {
+    // First try CricAPI match_info (has score data)
+    const response = await fetch(`${CRICAPI_BASE}/match_info?apikey=${CRICAPI_KEY}&id=${matchId}`, {
+      next: { revalidate: 30 },
+    });
+
+    if (response.ok) {
+      const data = await response.json();
+      if (data.status === "success" && data.data) {
+        const m = data.data;
+        const scoreArr = m.score || [];
+        const teamInfo = m.teamInfo || [];
+
+        const innings = scoreArr.map((s: { inning: string; r: number; w: number; o: number }, i: number) => {
+          const tInfo = teamInfo[i] || {};
+          return {
+            id: i + 1,
+            team: s.inning || tInfo.name || `Team ${i + 1}`,
+            teamShort: tInfo.shortname || `T${i + 1}`,
+            totalRuns: s.r || 0,
+            totalWickets: s.w || 0,
+            totalOvers: String(s.o || 0),
+            batting: [],
+            bowling: [],
+          };
+        });
+
+        return NextResponse.json({
+          matchId,
+          innings,
+          source: "cricapi",
+        });
+      }
+    }
+  } catch (error) {
+    console.error("Scorecard API error:", error);
+  }
+
+  // Fallback: use z-ai-web-dev-sdk
   try {
     const zai = await ZAI.create();
     const searchQuery = `${team1} vs ${team2} scorecard cricket`.trim();
@@ -42,19 +84,14 @@ export async function GET(request: Request) {
         if (jsonMatch) {
           const scorecard = JSON.parse(jsonMatch[0]);
           scorecard.matchId = matchId;
-          scorecard.source = "live";
+          scorecard.source = "ai";
           return NextResponse.json(scorecard);
         }
       }
     }
   } catch (error) {
-    console.error("Scorecard API error:", error);
+    console.error("Scorecard AI fallback error:", error);
   }
 
-  // Fallback
-  return NextResponse.json({
-    matchId,
-    innings: [],
-    source: "mock",
-  });
+  return NextResponse.json({ matchId, innings: [], source: "mock" });
 }

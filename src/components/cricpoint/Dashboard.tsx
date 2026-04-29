@@ -333,7 +333,7 @@ export default function Dashboard() {
             <button onClick={handleRefresh} className={`p-1.5 rounded-full hover:bg-white/10 transition-colors ${refreshCooldown ? 'opacity-40' : ''}`}>
               <RefreshCw className={`w-3.5 h-3.5 text-green-400/80 ${refreshing ? 'animate-spin' : ''}`} />
             </button>
-            {dataSource === 'live' && (
+            {dataSource === 'cricapi' && (
               <span className="text-[7px] font-bold text-green-400 bg-green-900/40 px-1.5 py-0.5 rounded-full">LIVE DATA</span>
             )}
           </div>
