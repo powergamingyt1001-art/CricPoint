@@ -27,12 +27,13 @@ export default function MatchDetail() {
 
   const match = selectedMatchData;
 
-  const fetchMatchData = useCallback(async (matchId: string) => {
+  const fetchMatchData = useCallback(async (matchId: string, team1: string, team2: string) => {
+    const params = `matchid=${matchId}&team1=${encodeURIComponent(team1)}&team2=${encodeURIComponent(team2)}`;
     const [info, sc, ov, comm] = await Promise.all([
-      fetch(`/api/cricket/match-info?matchid=${matchId}`).then(r => r.json()).catch(() => null),
-      fetch(`/api/cricket/match-scorecard?matchid=${matchId}`).then(r => r.json()).catch(() => null),
-      fetch(`/api/cricket/match-overs?matchid=${matchId}`).then(r => r.json()).catch(() => null),
-      fetch(`/api/cricket/match-commentary?matchid=${matchId}`).then(r => r.json()).catch(() => null),
+      fetch(`/api/cricket/match-info?${params}`).then(r => r.json()).catch(() => null),
+      fetch(`/api/cricket/match-scorecard?${params}`).then(r => r.json()).catch(() => null),
+      fetch(`/api/cricket/match-overs?${params}`).then(r => r.json()).catch(() => null),
+      fetch(`/api/cricket/match-commentary?${params}`).then(r => r.json()).catch(() => null),
     ]);
     return { info, sc, ov, comm };
   }, []);
@@ -44,7 +45,7 @@ export default function MatchDetail() {
 
     let cancelled = false;
     const load = async () => {
-      const data = await fetchMatchData(match.id);
+      const data = await fetchMatchData(match.id, match.team1, match.team2);
       if (!cancelled) {
         setMatchInfo(data.info);
         setScorecard(data.sc);

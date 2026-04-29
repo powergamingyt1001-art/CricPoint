@@ -10,24 +10,7 @@ import BottomNav from './BottomNav';
 import AIChat from './AIChat';
 import { motion, AnimatePresence } from 'framer-motion';
 
-const FALLBACK_MATCHES: MatchBasic[] = [
-  {
-    id: "102040", team1: "India", team2: "Australia", team1Short: "IND", team2Short: "AUS",
-    team1Score: "287/4 (42.3)", team2Score: "", status: "LIVE", matchType: "3rd ODI",
-    venue: "Mumbai", isLive: true, team1Flag: "🇮🇳", team2Flag: "🇦🇺",
-    currentOver: "1 0 4 0 6 1", battingTeam: "IND",
-  },
-  {
-    id: "102041", team1: "England", team2: "South Africa", team1Short: "ENG", team2Short: "SA",
-    team1Score: "243/8 (50)", team2Score: "196/10 (43.2)", status: "ENG won by 47 runs", matchType: "2nd T20I",
-    venue: "London", isLive: false, team1Flag: "🏴󠁧󠁢󠁥󠁮󠁧󠁿", team2Flag: "🇿🇦",
-  },
-  {
-    id: "102042", team1: "Sri Lanka", team2: "Bangladesh", team1Short: "SL", team2Short: "BAN",
-    team1Score: "289/6 (50)", team2Score: "253/10 (47.4)", status: "SL won by 36 runs", matchType: "4th ODI",
-    venue: "Colombo", isLive: false, team1Flag: "🇱🇰", team2Flag: "🇧🇩",
-  },
-];
+// No more hardcoded fallback - real data from API!
 
 const FAKE_COMMENT_NAMES = [
   'Rahul_King', 'Cricket_Fan99', 'IPL_Lover', 'Kohli_Army', 'Hitman_Fan',
@@ -165,6 +148,7 @@ export default function Dashboard() {
   const [showCreatePost, setShowCreatePost] = useState(false);
   const [newPostTitle, setNewPostTitle] = useState('');
   const [newPostHashtag, setNewPostHashtag] = useState('');
+  const [dataSource, setDataSource] = useState<string>('');
   const initialFetchDone = useRef(false);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const refreshCountRef = useRef(0);
@@ -179,10 +163,12 @@ export default function Dashboard() {
     try {
       const res = await fetch('/api/cricket/matches');
       const data = await res.json();
-      if (data.matches) setMatches(data.matches);
+      if (data.matches && data.matches.length > 0) {
+        setMatches(data.matches);
+        setDataSource(data.source || 'unknown');
+      }
     } catch (error) {
       console.error('Failed to fetch matches:', error);
-      setMatches(FALLBACK_MATCHES);
     }
   }, []);
 
@@ -347,6 +333,9 @@ export default function Dashboard() {
             <button onClick={handleRefresh} className={`p-1.5 rounded-full hover:bg-white/10 transition-colors ${refreshCooldown ? 'opacity-40' : ''}`}>
               <RefreshCw className={`w-3.5 h-3.5 text-green-400/80 ${refreshing ? 'animate-spin' : ''}`} />
             </button>
+            {dataSource === 'live' && (
+              <span className="text-[7px] font-bold text-green-400 bg-green-900/40 px-1.5 py-0.5 rounded-full">LIVE DATA</span>
+            )}
           </div>
         </div>
       </div>

@@ -1,68 +1,55 @@
 import { NextResponse } from "next/server";
-
-const RAPIDAPI_KEY = "826c8e3e87mshfccd1d1cdcea77dp19fb1bjsn1ab67075fba9";
-const RAPIDAPI_HOST = "free-cricbuzz-cricket-api.p.rapidapi.com";
-
-const MOCK_OVERS: Record<string, object> = {
-  "102040": {
-    matchId: "102040",
-    overs: [
-      { over: 42, balls: [{ run: 1, type: "normal" }, { run: 0, type: "normal" }, { run: 1, type: "normal" }] },
-      { over: 41, balls: [{ run: 0, type: "normal" }, { run: 1, type: "normal" }, { run: 0, type: "normal" }, { run: 4, type: "four" }, { run: 0, type: "normal" }, { run: 6, type: "six" }] },
-      { over: 40, balls: [{ run: 1, type: "normal" }, { run: 0, type: "normal" }, { run: 1, type: "normal" }, { run: 1, type: "normal" }, { run: 4, type: "four" }, { run: 0, type: "normal" }] },
-      { over: 39, balls: [{ run: 0, type: "normal" }, { run: 0, type: "normal" }, { run: 4, type: "four" }, { run: 0, type: "normal" }, { run: 1, type: "normal" }, { run: 6, type: "six" }] },
-      { over: 38, balls: [{ run: 2, type: "normal" }, { run: 1, type: "normal" }, { run: 0, type: "normal" }, { run: 0, type: "wicket" }, { run: 1, type: "normal" }, { run: 4, type: "four" }] },
-      { over: 37, balls: [{ run: 1, type: "normal" }, { run: 1, type: "normal" }, { run: 4, type: "four" }, { run: 0, type: "normal" }, { run: 6, type: "six" }, { run: 1, type: "normal" }] },
-      { over: 36, balls: [{ run: 0, type: "normal" }, { run: 4, type: "four" }, { run: 1, type: "normal" }, { run: 0, type: "normal" }, { run: 2, type: "normal" }, { run: 1, type: "normal" }] },
-      { over: 35, balls: [{ run: 1, type: "normal" }, { run: 0, type: "normal" }, { run: 0, type: "normal" }, { run: 6, type: "six" }, { run: 0, type: "normal" }, { run: 1, type: "normal" }] },
-      { over: 34, balls: [{ run: 4, type: "four" }, { run: 1, type: "normal" }, { run: 0, type: "normal" }, { run: 1, type: "normal" }, { run: 0, type: "normal" }, { run: 2, type: "normal" }] },
-      { over: 33, balls: [{ run: 0, type: "normal" }, { run: 1, type: "normal" }, { run: 4, type: "four" }, { run: 1, type: "normal" }, { run: 6, type: "six" }, { run: 0, type: "normal" }] },
-      { over: 32, balls: [{ run: 1, type: "normal" }, { run: 0, type: "normal" }, { run: 0, type: "normal" }, { run: 4, type: "four" }, { run: 1, type: "normal" }, { run: 0, type: "normal" }] },
-      { over: 31, balls: [{ run: 6, type: "six" }, { run: 0, type: "normal" }, { run: 1, type: "normal" }, { run: 0, type: "normal" }, { run: 4, type: "four" }, { run: 1, type: "normal" }] },
-      { over: 30, balls: [{ run: 0, type: "normal" }, { run: 1, type: "normal" }, { run: 2, type: "normal" }, { run: 0, type: "normal" }, { run: 1, type: "normal" }, { run: 0, type: "normal" }] },
-    ],
-  },
-  "102046": {
-    matchId: "102046",
-    overs: [
-      { over: 16, balls: [{ run: 1, type: "normal" }, { run: 1, type: "normal" }] },
-      { over: 15, balls: [{ run: 0, type: "normal" }, { run: 1, type: "normal" }, { run: 0, type: "normal" }, { run: 4, type: "four" }, { run: 0, type: "normal" }, { run: 6, type: "six" }] },
-      { over: 14, balls: [{ run: 1, type: "normal" }, { run: 4, type: "four" }, { run: 0, type: "normal" }, { run: 6, type: "six" }, { run: 1, type: "normal" }, { run: 0, type: "normal" }] },
-      { over: 13, balls: [{ run: 0, type: "normal" }, { run: 2, type: "normal" }, { run: 1, type: "normal" }, { run: 0, type: "normal" }, { run: 4, type: "four" }, { run: 1, type: "normal" }] },
-      { over: 12, balls: [{ run: 1, type: "normal" }, { run: 0, type: "wicket" }, { run: 4, type: "four" }, { run: 0, type: "normal" }, { run: 1, type: "normal" }, { run: 6, type: "six" }] },
-    ],
-  },
-};
+import ZAI from "z-ai-web-dev-sdk";
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const matchId = searchParams.get("matchid");
+  const team1 = searchParams.get("team1") || "";
+  const team2 = searchParams.get("team2") || "";
 
   if (!matchId) {
     return NextResponse.json({ error: "matchid is required" }, { status: 400 });
   }
 
   try {
-    const response = await fetch(
-      `https://${RAPIDAPI_HOST}/cricket-match-overs?matchid=${matchId}`,
-      {
-        method: "GET",
-        headers: {
-          "Content-Type": "application/json",
-          "x-rapidapi-host": RAPIDAPI_HOST,
-          "x-rapidapi-key": RAPIDAPI_KEY,
-        },
-      }
-    );
+    const zai = await ZAI.create();
+    const searchQuery = `${team1} vs ${team2} over by over cricket`.trim();
+    const searchResults = await zai.functions.invoke('web_search', {
+      query: searchQuery || 'cricket overs summary today',
+      num: 5,
+    });
 
-    if (response.ok) {
-      const data = await response.json();
-      return NextResponse.json(data);
+    const matchUrl = searchResults?.find((r: { host_name: string }) =>
+      r.host_name.includes('cricbuzz') || r.host_name.includes('espncricinfo')
+    )?.url;
+
+    if (matchUrl) {
+      const pageData = await zai.functions.invoke('page_reader', { url: matchUrl });
+      if (pageData?.data?.html) {
+        const text = pageData.data.html.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ');
+        const llmResponse = await zai.chat.completions.create({
+          messages: [
+            {
+              role: 'system',
+              content: `Extract over-by-over cricket summary. Return JSON: {"overs":[{"overNum":1,"runs":8,"wickets":0,"balls":["1","0","4","0","2","1"],"summary":"..."}]}. Return ONLY valid JSON with up to 10 recent overs.`
+            },
+            { role: 'user', content: `Extract overs data from:\n\n${text.substring(0, 3000)}` }
+          ],
+          thinking: { type: 'disabled' },
+        });
+        const content = llmResponse.choices?.[0]?.message?.content || '{}';
+        const jsonMatch = content.match(/\{[\s\S]*\}/);
+        if (jsonMatch) {
+          const overs = JSON.parse(jsonMatch[0]);
+          overs.matchId = matchId;
+          overs.source = "live";
+          return NextResponse.json(overs);
+        }
+      }
     }
   } catch (error) {
-    console.error("API fetch error:", error);
+    console.error("Overs API error:", error);
   }
 
-  const mock = MOCK_OVERS[matchId] || MOCK_OVERS["102040"];
-  return NextResponse.json({ ...mock, mock: true });
+  return NextResponse.json({ matchId, overs: [], source: "mock" });
 }
