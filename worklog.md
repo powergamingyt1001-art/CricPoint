@@ -177,3 +177,29 @@ Stage Summary:
 - Pull-to-refresh works (touch-based)
 - Ads: 1 ad after every 2 posts only
 - Rate limiting: 5 refreshes = 20s cooldown
+
+---
+Task ID: 6
+Agent: Main Agent
+Task: Full-width match slider, header ad system, splash screen fix, GitHub push
+
+Work Log:
+- Changed MatchSlider from compact w-56 cards to FULL WIDTH cards (calc(100vw - 32px))
+- 1 card per screen, swipe for next, snap scroll
+- Added 5 extra matches (NZ vs PAK, WI vs AFG, IRE vs ZIM, NED vs SCO, SA vs IND) for total 8
+- Fixed SplashScreen background: Changed from green to same dark navy as header (#0a1628 → #132244)
+- Changed particles from yellow/green to amber/gold matching header accent
+- Changed loading bar and dots from green to amber matching header accent
+- Added header ad system: Ad banner appears below header periodically
+  - Shows first ad 5 seconds after load for 8 seconds
+  - Then every 30 seconds for 8 seconds
+  - When ad shows, header area expands to ~25-30% of screen
+  - Smooth animation (framer-motion) for expand/collapse
+- Pushed all code to GitHub: https://github.com/powergamingyt1001-art/CricPoint
+- All lint checks pass, dev server running
+
+Stage Summary:
+- Match slider: Full-width cards (1 per screen), 8 matches, snap scroll
+- Splash screen: Dark navy background matching header (no more green)
+- Header ad: Periodic ad banner expands header to 25-30% of screen
+- Code pushed to GitHub for Vercel deployment
