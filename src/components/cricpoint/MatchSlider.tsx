@@ -3,6 +3,7 @@
 import { motion } from 'framer-motion';
 import { Radio, Clock, Trophy, MapPin, Globe, Zap, Loader2 } from 'lucide-react';
 import { useCricPointStore, type MatchBasic } from '@/store/cricpoint-store';
+import Image from 'next/image';
 
 export default function MatchSlider({ matches, onSelectMatch }: { matches: MatchBasic[]; onSelectMatch: (m: MatchBasic) => void }) {
   const { matchPinned, pinnedMatchId, togglePin, showPointTable, setShowPointTable } = useCricPointStore();
@@ -84,21 +85,14 @@ export default function MatchSlider({ matches, onSelectMatch }: { matches: Match
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2.5">
                       {match.team1Img ? (
-                        <img src={match.team1Img} alt={match.team1Short} className="w-8 h-8 object-contain" />
+                        <Image src={match.team1Img} alt={match.team1Short} width={32} height={32} className="object-contain" unoptimized />
                       ) : (
                         <span className="text-2xl">{match.team1Flag}</span>
                       )}
-                      <div className="flex items-center gap-1.5">
-                        <span className="text-sm font-bold text-gray-800 dark:text-gray-200">{match.team1Short}</span>
-                        {match.battingTeam === match.team1Short && match.isLive && (
-                          <span className="text-[8px] font-bold text-green-600 bg-green-50 dark:bg-green-900/30 px-1.5 py-0.5 rounded flex items-center gap-0.5">
-                            <Zap className="w-2 h-2" />BAT
-                          </span>
-                        )}
-                      </div>
+                      <span className="text-sm font-bold text-gray-800 dark:text-gray-200">{match.team1Short}</span>
                     </div>
-                    <span className="text-sm font-black text-gray-900 dark:text-gray-100">
-                      {match.team1Score || '-'}
+                    <span className={`text-sm font-black ${match.team1Score ? 'text-gray-900 dark:text-gray-100' : 'text-gray-400'}`}>
+                      {match.team1Score || '—'}
                     </span>
                   </div>
 
@@ -113,26 +107,19 @@ export default function MatchSlider({ matches, onSelectMatch }: { matches: Match
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2.5">
                       {match.team2Img ? (
-                        <img src={match.team2Img} alt={match.team2Short} className="w-8 h-8 object-contain" />
+                        <Image src={match.team2Img} alt={match.team2Short} width={32} height={32} className="object-contain" unoptimized />
                       ) : (
                         <span className="text-2xl">{match.team2Flag}</span>
                       )}
-                      <div className="flex items-center gap-1.5">
-                        <span className="text-sm font-bold text-gray-700 dark:text-gray-300">{match.team2Short}</span>
-                        {match.battingTeam === match.team2Short && match.isLive && (
-                          <span className="text-[8px] font-bold text-green-600 bg-green-50 dark:bg-green-900/30 px-1.5 py-0.5 rounded flex items-center gap-0.5">
-                            <Zap className="w-2 h-2" />BAT
-                          </span>
-                        )}
-                      </div>
+                      <span className="text-sm font-bold text-gray-700 dark:text-gray-300">{match.team2Short}</span>
                     </div>
-                    <span className="text-sm font-bold text-gray-600 dark:text-gray-400">
-                      {match.team2Score || 'Yet to bat'}
+                    <span className={`text-sm font-bold ${match.team2Score ? 'text-gray-600 dark:text-gray-400' : 'text-gray-400'}`}>
+                      {match.team2Score || '—'}
                     </span>
                   </div>
                 </div>
 
-                {/* Status line for important updates */}
+                {/* Status line - IMPORTANT: Shows live status even when scores are not available */}
                 {match.status && (
                   <div className="mt-3 pt-2 border-t border-gray-100 dark:border-gray-700">
                     <p className={`text-[10px] font-semibold truncate ${

@@ -7,10 +7,11 @@ import InfoSection from './InfoSection';
 import ScorecardSection from './ScorecardSection';
 import OverSection from './OverSection';
 import CommentarySection from './CommentarySection';
+import Image from 'next/image';
 
 const matchTabs: { id: MatchTab; label: string; icon: React.ReactNode }[] = [
   { id: 'info', label: 'Info', icon: <Info className="w-3.5 h-3.5" /> },
-  { id: 'scorecard', label: 'Points', icon: <BarChart3 className="w-3.5 h-3.5" /> },
+  { id: 'scorecard', label: 'Score', icon: <BarChart3 className="w-3.5 h-3.5" /> },
   { id: 'overs', label: 'Overs', icon: <Clock className="w-3.5 h-3.5" /> },
   { id: 'commentary', label: 'Commentary', icon: <Mic className="w-3.5 h-3.5" /> },
 ];
@@ -60,10 +61,13 @@ export default function MatchDetail() {
 
   if (!match) return null;
 
+  // Extract live status from match data
+  const liveStatus = match.status || '';
+
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
       {/* Premium Header */}
-      <div className="bg-gradient-to-br from-gray-800 via-gray-900 to-green-900 text-white px-4 pt-3 pb-6">
+      <div className="bg-gradient-to-br from-[#0a1628] via-[#132244] to-[#0a1628] text-white px-4 pt-3 pb-5">
         <button
           onClick={goBack}
           className="flex items-center gap-1.5 text-white/70 hover:text-white mb-3 transition-colors"
@@ -76,9 +80,15 @@ export default function MatchDetail() {
 
         <div className="flex items-center justify-between gap-4">
           <div className="flex-1 text-center">
-            <span className="text-3xl block mb-1">{match.team1Flag}</span>
+            {match.team1Img ? (
+              <div className="flex justify-center mb-1">
+                <Image src={match.team1Img} alt={match.team1Short} width={40} height={40} className="object-contain" unoptimized />
+              </div>
+            ) : (
+              <span className="text-3xl block mb-1">{match.team1Flag}</span>
+            )}
             <p className="text-sm font-bold">{match.team1Short}</p>
-            <p className="text-base font-black text-green-400 mt-0.5">{match.team1Score || '-'}</p>
+            <p className="text-base font-black text-green-400 mt-0.5">{match.team1Score || '—'}</p>
           </div>
           <div className="flex-shrink-0">
             {match.isLive ? (
@@ -91,13 +101,29 @@ export default function MatchDetail() {
             )}
           </div>
           <div className="flex-1 text-center">
-            <span className="text-3xl block mb-1">{match.team2Flag}</span>
+            {match.team2Img ? (
+              <div className="flex justify-center mb-1">
+                <Image src={match.team2Img} alt={match.team2Short} width={40} height={40} className="object-contain" unoptimized />
+              </div>
+            ) : (
+              <span className="text-3xl block mb-1">{match.team2Flag}</span>
+            )}
             <p className="text-sm font-bold">{match.team2Short}</p>
-            <p className="text-base font-black text-white/80 mt-0.5">{match.team2Score || '-'}</p>
+            <p className="text-base font-black text-white/80 mt-0.5">{match.team2Score || '—'}</p>
           </div>
         </div>
 
-        {!match.isLive && <p className="text-xs text-yellow-300 mt-2 text-center font-medium">{match.status}</p>}
+        {/* Live status or result */}
+        {liveStatus && (
+          <div className="mt-3 text-center">
+            <p className={`text-xs font-semibold ${
+              match.isLive ? 'text-green-400' : 'text-amber-300'
+            }`}>
+              {match.isLive && <span className="inline-block w-1.5 h-1.5 bg-green-400 rounded-full animate-pulse mr-1" />}
+              {liveStatus}
+            </p>
+          </div>
+        )}
         <p className="text-[10px] text-white/40 mt-1 text-center">{match.venue}</p>
       </div>
 

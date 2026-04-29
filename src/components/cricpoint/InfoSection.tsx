@@ -1,22 +1,28 @@
 'use client';
 
 import { useState } from 'react';
-import { MapPin, Users, Clock, Trophy, Vote } from 'lucide-react';
+import { MapPin, Users, Clock, Trophy, Vote, Zap } from 'lucide-react';
 import { motion } from 'framer-motion';
+import Image from 'next/image';
 
 interface MatchInfo {
   matchId: string;
   seriesName: string;
   matchDesc: string;
   matchType: string;
-  venue: { name: string; city: string; capacity: string; hostTeam: string };
-  team1: { name: string; shortName: string; flag: string; squad: string[] };
-  team2: { name: string; shortName: string; flag: string; squad: string[] };
+  venue: { name: string; city: string; capacity?: string; hostTeam?: string };
+  team1: { name: string; shortName: string; flag: string; img?: string; score?: string; squad: string[] };
+  team2: { name: string; shortName: string; flag: string; img?: string; score?: string; squad: string[] };
   status: string;
   toss: string;
-  umpires: string;
-  matchReferee: string;
-  startTime: string;
+  umpires?: string;
+  matchReferee?: string;
+  startTime?: string;
+  date?: string;
+  dateTimeGMT?: string;
+  matchStarted?: boolean;
+  matchEnded?: boolean;
+  score?: Array<{ inning: string; r: number; w: number; o: number }>;
 }
 
 interface InfoSectionProps {
@@ -60,8 +66,76 @@ export default function InfoSection({ info, loading }: InfoSectionProps) {
     );
   }
 
+  const isLive = info.matchStarted && !info.matchEnded;
+
   return (
     <div className="p-4 space-y-4">
+      {/* Live Status Banner */}
+      {isLive && info.status && (
+        <motion.div
+          className="bg-green-50 dark:bg-green-900/20 rounded-2xl p-3 border border-green-200 dark:border-green-800/30"
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+        >
+          <div className="flex items-center gap-2 mb-1">
+            <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
+            <span className="text-[10px] font-bold text-green-600 dark:text-green-400 uppercase">Live Update</span>
+          </div>
+          <p className="text-xs font-semibold text-green-700 dark:text-green-300">{info.status}</p>
+        </motion.div>
+      )}
+
+      {/* Match Result */}
+      {!isLive && info.status && (
+        <motion.div
+          className="bg-amber-50 dark:bg-amber-900/20 rounded-2xl p-3 border border-amber-200 dark:border-amber-800/30"
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+        >
+          <p className="text-xs font-semibold text-amber-700 dark:text-amber-300">{info.status}</p>
+        </motion.div>
+      )}
+
+      {/* Score Summary */}
+      {(info.team1?.score || info.team2?.score || (info.score && info.score.length > 0)) && (
+        <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 overflow-hidden">
+          <div className="flex items-center gap-1.5 px-4 py-2.5 bg-gray-50 dark:bg-gray-700/50 border-b border-gray-100 dark:border-gray-700">
+            <Zap className="w-3 h-3 text-green-600" />
+            <span className="text-[11px] font-bold text-gray-500 uppercase tracking-wider">Score Summary</span>
+          </div>
+          <div className="divide-y divide-gray-50 dark:divide-gray-700/50">
+            {/* Team 1 Score */}
+            <div className="flex items-center justify-between px-4 py-3">
+              <div className="flex items-center gap-2">
+                {info.team1.img ? (
+                  <Image src={info.team1.img} alt={info.team1.shortName} width={24} height={24} className="object-contain" unoptimized />
+                ) : (
+                  <span className="text-lg">{info.team1.flag}</span>
+                )}
+                <span className="text-sm font-bold text-gray-800 dark:text-gray-200">{info.team1.shortName || info.team1.name}</span>
+              </div>
+              <span className="text-sm font-black text-gray-900 dark:text-gray-100">
+                {info.team1.score || '—'}
+              </span>
+            </div>
+            {/* Team 2 Score */}
+            <div className="flex items-center justify-between px-4 py-3">
+              <div className="flex items-center gap-2">
+                {info.team2.img ? (
+                  <Image src={info.team2.img} alt={info.team2.shortName} width={24} height={24} className="object-contain" unoptimized />
+                ) : (
+                  <span className="text-lg">{info.team2.flag}</span>
+                )}
+                <span className="text-sm font-bold text-gray-800 dark:text-gray-200">{info.team2.shortName || info.team2.name}</span>
+              </div>
+              <span className="text-sm font-black text-gray-900 dark:text-gray-100">
+                {info.team2.score || '—'}
+              </span>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Poll Section */}
       <motion.div
         className="bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 rounded-2xl p-4 border border-green-100 dark:border-green-800/30"
@@ -96,8 +170,12 @@ export default function InfoSection({ info, loading }: InfoSectionProps) {
             )}
             <div className="relative flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <span className="text-lg">{info.team1.flag}</span>
-                <span className="text-sm font-bold text-gray-800 dark:text-gray-200">{info.team1.name}</span>
+                {info.team1.img ? (
+                  <Image src={info.team1.img} alt={info.team1.shortName} width={20} height={20} className="object-contain" unoptimized />
+                ) : (
+                  <span className="text-lg">{info.team1.flag}</span>
+                )}
+                <span className="text-sm font-bold text-gray-800 dark:text-gray-200">{info.team1.shortName || info.team1.name}</span>
               </div>
               {pollVoted && (
                 <span className="text-sm font-bold text-green-600 dark:text-green-400">{team1Percent}%</span>
@@ -127,8 +205,12 @@ export default function InfoSection({ info, loading }: InfoSectionProps) {
             )}
             <div className="relative flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <span className="text-lg">{info.team2.flag}</span>
-                <span className="text-sm font-bold text-gray-800 dark:text-gray-200">{info.team2.name}</span>
+                {info.team2.img ? (
+                  <Image src={info.team2.img} alt={info.team2.shortName} width={20} height={20} className="object-contain" unoptimized />
+                ) : (
+                  <span className="text-lg">{info.team2.flag}</span>
+                )}
+                <span className="text-sm font-bold text-gray-800 dark:text-gray-200">{info.team2.shortName || info.team2.name}</span>
               </div>
               {pollVoted && (
                 <span className="text-sm font-bold text-green-600 dark:text-green-400">{team2Percent}%</span>
@@ -152,52 +234,28 @@ export default function InfoSection({ info, loading }: InfoSectionProps) {
 
         <div className="divide-y divide-gray-50 dark:divide-gray-700/50">
           <InfoRow icon={<Trophy className="w-3.5 h-3.5" />} label="Series" value={info.seriesName} />
-          <InfoRow icon={<MapPin className="w-3.5 h-3.5" />} label="Venue" value={`${info.venue.name}, ${info.venue.city}`} />
-          <InfoRow icon={<Users className="w-3.5 h-3.5" />} label="Capacity" value={info.venue.capacity} />
-          <InfoRow icon={<Clock className="w-3.5 h-3.5" />} label="Start Time" value={new Date(info.startTime).toLocaleString()} />
+          <InfoRow icon={<MapPin className="w-3.5 h-3.5" />} label="Venue" value={info.venue.name} />
+          <InfoRow icon={<Clock className="w-3.5 h-3.5" />} label="Date" value={info.date || info.dateTimeGMT || ''} />
         </div>
       </div>
 
-      {/* Toss & Officials */}
-      <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 overflow-hidden">
-        <h3 className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider px-4 pt-4 pb-2">
-          Toss & Officials
-        </h3>
-        <div className="divide-y divide-gray-50 dark:divide-gray-700/50">
-          <InfoRow label="Toss" value={info.toss} />
-          <InfoRow label="Umpires" value={info.umpires} />
-          <InfoRow label="Match Referee" value={info.matchReferee} />
-        </div>
-      </div>
-
-      {/* Squads */}
-      <div className="space-y-3">
-        {[info.team1, info.team2].map((team) => (
-          <div key={team.shortName} className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 overflow-hidden">
-            <div className="flex items-center gap-2 px-4 pt-4 pb-2">
-              <span className="text-lg">{team.flag}</span>
-              <h3 className="text-sm font-bold text-gray-800 dark:text-gray-200">{team.name} Squad</h3>
-            </div>
-            <div className="px-4 pb-4">
-              <div className="flex flex-wrap gap-1.5">
-                {team.squad.map((player, i) => (
-                  <span
-                    key={i}
-                    className="text-[11px] bg-gray-50 dark:bg-gray-700 text-gray-700 dark:text-gray-300 px-2.5 py-1 rounded-full"
-                  >
-                    {player}
-                  </span>
-                ))}
-              </div>
-            </div>
+      {/* Toss Info */}
+      {info.toss && (
+        <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 overflow-hidden">
+          <h3 className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider px-4 pt-4 pb-2">
+            Toss
+          </h3>
+          <div className="px-4 py-3">
+            <p className="text-xs font-medium text-gray-800 dark:text-gray-200">{info.toss}</p>
           </div>
-        ))}
-      </div>
+        </div>
+      )}
     </div>
   );
 }
 
 function InfoRow({ icon, label, value }: { icon?: React.ReactNode; label: string; value: string }) {
+  if (!value) return null;
   return (
     <div className="flex items-start gap-3 px-4 py-2.5">
       {icon && <div className="text-gray-400 mt-0.5">{icon}</div>}
