@@ -172,6 +172,8 @@ export default function Dashboard() {
   const [isPullRefreshing, setIsPullRefreshing] = useState(false);
   const touchStartY = useRef(0);
   const [pullDistance, setPullDistance] = useState(0);
+  // Header ad: shows periodically, makes header area bigger (~25-30% of screen)
+  const [showHeaderAd, setShowHeaderAd] = useState(false);
 
   const fetchMatches = useCallback(async () => {
     try {
@@ -303,6 +305,20 @@ export default function Dashboard() {
     setShowCreatePost(false);
   };
 
+  // Header ad rotation: show ad for 8 seconds every 30 seconds
+  useEffect(() => {
+    const adCycle = setInterval(() => {
+      setShowHeaderAd(true);
+      setTimeout(() => setShowHeaderAd(false), 8000);
+    }, 30000);
+    // Also show ad briefly on first load after 5 seconds
+    const initialAd = setTimeout(() => {
+      setShowHeaderAd(true);
+      setTimeout(() => setShowHeaderAd(false), 8000);
+    }, 5000);
+    return () => { clearInterval(adCycle); clearTimeout(initialAd); };
+  }, []);
+
   const liveMatches = matches.filter(m => m.isLive);
   const completedMatches = matches.filter(m => !m.isLive);
   const upcomingMatches = matches.filter(m => !m.isLive && m.status && m.status.toLowerCase().includes('yet'));
@@ -335,6 +351,26 @@ export default function Dashboard() {
         </div>
       </div>
 
+      {/* Header Ad Banner - Makes header area wider when shown (~25-30% screen) */}
+      <AnimatePresence>
+        {showHeaderAd && (
+          <motion.div
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: 'auto', opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={{ duration: 0.3 }}
+            className="overflow-hidden bg-gradient-to-r from-yellow-50 to-amber-50 dark:from-gray-800 dark:to-gray-700 border-b border-yellow-200 dark:border-gray-600"
+          >
+            <div className="px-4 py-3 text-center">
+              <p className="text-[8px] text-gray-400 uppercase tracking-widest mb-1.5">Advertisement</p>
+              <div className="h-24 bg-yellow-100/50 dark:bg-gray-600/50 rounded-xl flex items-center justify-center">
+                <span className="text-gray-400 text-sm font-medium">📢 Ad Banner</span>
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {/* Pin overlay */}
       {matchPinned && <PinSection matches={matches} />}
 
@@ -349,7 +385,7 @@ export default function Dashboard() {
       )}
 
       {/* Main Content */}
-      <div ref={scrollContainerRef} className="flex-1 overflow-y-auto pb-16" style={{ maxHeight: 'calc(100vh - 52px)' }}>
+      <div ref={scrollContainerRef} className="flex-1 overflow-y-auto pb-16" style={{ maxHeight: `calc(100vh - ${showHeaderAd ? '200px' : '52px'})` }}>
 
         {/* HOME TAB */}
         {activeTab === 'home' && (

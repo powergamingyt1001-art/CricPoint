@@ -14,13 +14,13 @@ const PARTICLES = [
 export default function SplashScreen({ onComplete }: { onComplete: () => void }) {
   return (
     <motion.div
-      className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-gradient-to-br from-green-900 via-green-800 to-emerald-900"
+      className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-gradient-to-br from-[#0a1628] via-[#132244] to-[#0a1628]"
       initial={{ opacity: 1 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
       transition={{ duration: 0.5 }}
     >
-      {/* Background particles */}
+      {/* Background particles - amber/gold glow matching header accent */}
       <div className="absolute inset-0 overflow-hidden">
         {PARTICLES.map((p, i) => (
           <motion.div
@@ -31,7 +31,7 @@ export default function SplashScreen({ onComplete }: { onComplete: () => void })
               height: p.h,
               left: `${p.left}%`,
               top: `${p.top}%`,
-              background: 'radial-gradient(circle, #fbbf24, transparent)',
+              background: 'radial-gradient(circle, #f59e0b, transparent)',
             }}
             animate={{ y: [0, -30, 0], x: [0, p.xOff, 0], scale: [1, 1.2, 1] }}
             transition={{ duration: p.dur, repeat: Infinity, delay: i * 0.5 }}
@@ -39,7 +39,7 @@ export default function SplashScreen({ onComplete }: { onComplete: () => void })
         ))}
       </div>
 
-      {/* Logo Only - no text */}
+      {/* Logo Only - BIG and CLEAR */}
       <motion.div
         className="relative z-10 flex flex-col items-center"
         initial={{ scale: 0.5, opacity: 0 }}
@@ -47,7 +47,7 @@ export default function SplashScreen({ onComplete }: { onComplete: () => void })
         transition={{ duration: 0.8, ease: "easeOut" }}
       >
         <motion.div
-          className="relative w-56 h-56 mb-8"
+          className="relative w-72 h-72 sm:w-80 sm:h-80 mb-6"
           initial={{ rotate: -10 }}
           animate={{ rotate: 0 }}
           transition={{ delay: 0.3, duration: 0.6, ease: "easeOut" }}
@@ -57,12 +57,12 @@ export default function SplashScreen({ onComplete }: { onComplete: () => void })
             alt="CricPoint Logo"
             className="w-full h-full object-contain drop-shadow-2xl"
           />
-          {/* Glow effect behind logo */}
-          <div className="absolute inset-0 -z-10 bg-green-400/20 rounded-full blur-3xl scale-110" />
+          {/* Glow effect behind logo - amber matching header accent */}
+          <div className="absolute inset-0 -z-10 bg-amber-400/15 rounded-full blur-3xl scale-110" />
         </motion.div>
       </motion.div>
 
-      {/* Green Loading Animation */}
+      {/* Loading Animation - amber/gold matching header accent */}
       <motion.div
         className="absolute bottom-24 z-10 flex flex-col items-center"
         initial={{ opacity: 0 }}
@@ -74,17 +74,17 @@ export default function SplashScreen({ onComplete }: { onComplete: () => void })
           {[0, 1, 2].map((i) => (
             <motion.div
               key={i}
-              className="w-2.5 h-2.5 bg-green-400 rounded-full"
+              className="w-2.5 h-2.5 bg-amber-400 rounded-full"
               animate={{ scale: [1, 1.5, 1], opacity: [0.5, 1, 0.5] }}
               transition={{ duration: 1, repeat: Infinity, delay: i * 0.2 }}
             />
           ))}
         </div>
 
-        {/* Green loading bar */}
-        <div className="w-48 h-1.5 bg-green-900/50 rounded-full overflow-hidden">
+        {/* Loading bar - amber gradient matching header accent */}
+        <div className="w-48 h-1.5 bg-white/10 rounded-full overflow-hidden">
           <motion.div
-            className="h-full bg-gradient-to-r from-green-400 to-emerald-300 rounded-full"
+            className="h-full bg-gradient-to-r from-amber-400 to-amber-300 rounded-full"
             initial={{ width: "0%" }}
             animate={{ width: "100%" }}
             transition={{ delay: 1, duration: 2.2, ease: "easeInOut" }}
